@@ -1,8 +1,7 @@
 class Hero {
-    // Constants
     static DEVICE_BREAKPOINT = 768;
     static LOGO_HIDE_THRESHOLD = 120;
-    static SCROLL_THRESHOLD = 4;
+    static SCROLL_THRESHOLD = 20;
     static BOUNCE_MAX_SCROLL = 200;
     static ANIMATION_TIMEOUT = 600;
     static THROTTLE_DELAY = 16;
@@ -12,7 +11,7 @@ class Hero {
         this.deviceType = this.getDeviceType();
         this.animationFrameId = null;
         this.isAnimating = false;
-        
+
         // Element cache
         this.elements = {
             coloredContainer: null,
@@ -25,12 +24,12 @@ class Hero {
             companyLogoContainer: null,
             stickyPlaceholder: null,
         };
-        
+
         // UI state
         this.hasCtcBtn = false;
         this.isUpperLogoHidden = false;
         this.isUpperLogoTickingAnimation = false;
-        
+
         // Scroll state
         this.originalOffsetTop = null;
         this.containerHeight = null;
@@ -61,7 +60,7 @@ class Hero {
 
     getHeroContainerAttributes() {
         if (!this.elements.heroContainer) return null;
-        
+
         return {
             isPublishCTC: this.elements.heroContainer.getAttribute("data-ispublishctc") === "true",
             ctcBtnColor: this.elements.heroContainer.getAttribute("data-ctcbtn-color"),
@@ -76,42 +75,41 @@ class Hero {
 
     createCTCButton(attributes) {
         const button = document.createElement("button");
-        
+
         button.classList.add(
             attributes.isAmexWebsite ? "amex__btn__theme__sticky__header" : "isracard__btn__theme__sticky__header",
             "clickToCall__btn",
             "lower__frame__btns"
         );
-        
+
         if (attributes.ctcBtnColor) {
             button.style.backgroundColor = attributes.ctcBtnColor;
         }
-        
+
         if (attributes.phoneNumber) button.setAttribute("data-phone", attributes.phoneNumber);
         if (attributes.urlLink) button.setAttribute("data-url", attributes.urlLink);
-        
+
         button.addEventListener("click", function () {
             handleCtcClick(this);
         });
-        
+
         const icon = document.createElement("img");
         icon.src = attributes.iconUrl;
         icon.alt = attributes.ctcImageAltText;
         button.appendChild(icon);
-        
+
         return button;
     }
 
     manageClickToCallButton() {
         if (!this.elements.lowerFrame) return;
-        
-        // Refresh CTC button reference
+
         this.elements.ctcBtn = document.querySelector(".clickToCall__btn");
-        
+
         if (this.isMobile) {
             const attributes = this.getHeroContainerAttributes();
             if (!attributes) return;
-            
+
             if (attributes.shouldShowButton && !this.elements.ctcBtn && attributes.isPublishCTC) {
                 this.elements.ctcBtn = this.createCTCButton(attributes);
                 this.elements.lowerFrame.appendChild(this.elements.ctcBtn);
@@ -121,10 +119,9 @@ class Hero {
                 this.elements.lowerFrame.classList.remove("has-ctc-btn");
                 this.elements.ctcBtn = null;
             }
-            
-            // Update class based on current state
+
             this.elements.lowerFrame.classList.toggle(
-                "has-ctc-btn", 
+                "has-ctc-btn",
                 this.elements.ctcBtn && this.elements.lowerFrame.contains(this.elements.ctcBtn)
             );
         } else {
@@ -195,11 +192,21 @@ class Hero {
     }
 
     init() {
-        this.cacheElements();
-        this.initializeStyles();
-        this.setFrameColorBackground();
-        this.updateCtcStatus();
-        this.startAnimation();
+        try {
+            this.cacheElements();
+            this.initializeStyles();
+            this.setFrameColorBackground();
+            this.updateCtcStatus();
+            this.startAnimation();
+        } catch (error) {
+            console.error('Hero initialization failed:', error);
+            this.handleInitError(error);
+        }
+    }
+
+    handleInitError(error) {
+        this.stopAnimation();
+        console.warn('Hero running in degraded mode due to initialization error');
     }
 
     updateCtcStatus() {
@@ -453,16 +460,16 @@ class Hero {
         const newDeviceType = this.getDeviceType();
         if (newDeviceType !== this.deviceType) {
             this.deviceType = newDeviceType;
-            this.cacheElements(); // Refresh cached elements
+            this.cacheElements();
             this.initializeStyles();
             this.updateCtcStatus();
         }
     }
     handleScrollUpperLogo() {
         if (!this.elements.companyLogoContainer) return;
-        
+
         const scrollY = window.scrollY;
-        
+
         if (scrollY > Hero.LOGO_HIDE_THRESHOLD && !this.isUpperLogoHidden) {
             this.elements.companyLogoContainer.style.opacity = "0";
             this.elements.companyLogoContainer.style.transform = "translateY(-20px)";
@@ -484,19 +491,20 @@ class Hero {
                 this.isUpperLogoTickingAnimation = false;
             }, Hero.THROTTLE_DELAY);
         }
-    }    createScrollTimeout(callback) {
+    }
+
+    createScrollTimeout(callback) {
         return setTimeout(callback, Hero.ANIMATION_TIMEOUT);
     }
 
     handleStickyHeaderScroll() {
         if (this.scrollDisabled || this.isScrolling || !this.elements.unColoredContainer) return;
-        
+
         const currentScrollY = window.scrollY;
         if (Math.abs(currentScrollY - this.lastScrollY) < 1) return;
-        
+
         this.lastScrollY = currentScrollY;
 
-        // Initialize offset values if not set
         if (this.originalOffsetTop === null) {
             this.originalOffsetTop = this.elements.unColoredContainer.offsetTop;
             this.containerHeight = this.elements.unColoredContainer.offsetHeight;
@@ -504,12 +512,10 @@ class Hero {
 
         const lowerRect = this.elements.unColoredContainer.getBoundingClientRect();
 
-        // Reset bounce trigger at top
         if (currentScrollY <= 10) {
             this.bounceTriggered = false;
         }
 
-        // Handle bounce behavior
         if (
             currentScrollY >= Hero.SCROLL_THRESHOLD &&
             currentScrollY < Hero.BOUNCE_MAX_SCROLL &&
@@ -522,12 +528,11 @@ class Hero {
             this.createScrollTimeout(() => { this.snapBackInProgress = false; });
         }
 
-        // Reset bounce trigger
         if (currentScrollY < Hero.SCROLL_THRESHOLD && this.bounceTriggered) {
             this.bounceTriggered = false;
         }
 
-        // Handle sticky behavior
+
         if (lowerRect.top <= 0 && !this.elements.unColoredContainer.classList.contains("sticky")) {
             this.elements.stickyPlaceholder = document.createElement("div");
             this.elements.stickyPlaceholder.style.height = this.containerHeight + "px";
@@ -539,7 +544,6 @@ class Hero {
             this.elements.unColoredContainer.classList.add("sticky");
         }
 
-        // Handle unstick behavior
         if (
             currentScrollY < this.originalOffsetTop &&
             this.elements.unColoredContainer.classList.contains("sticky") &&
@@ -557,21 +561,89 @@ class Hero {
     }
 }
 
-let hero;
+class HeroApp {
+    constructor() {
+        this.hero = null;
+        this.resizeTimeout = null;
+        this.isDestroyed = false;
+        
+        this.boundHandlers = {
+            resize: this.handleResize.bind(this),
+            scroll: this.handleScroll.bind(this),
+            beforeUnload: this.cleanup.bind(this)
+        };
+    }
 
-document.addEventListener("DOMContentLoaded", () => {
-    hero = new Hero();
-    hero.manageClickToCallButton();
+    init() {
+        try {
+            this.hero = new Hero();
+            this.hero.manageClickToCallButton();
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('Failed to initialize Hero:', error);
+        }
+    }
 
-    window.addEventListener("resize", () => {
-        if (!hero) return;
-        hero.manageClickToCallButton();
-        hero.updateDeviceType();
-    });
+    setupEventListeners() {
+        window.addEventListener('resize', this.boundHandlers.resize, { passive: true });
+        window.addEventListener('scroll', this.boundHandlers.scroll, { passive: true });
+        window.addEventListener('beforeunload', this.boundHandlers.beforeUnload);
+    }
 
-    window.addEventListener("scroll", () => {
-        if (!hero) return;
-        hero.handleUpperLogoAnimation();
-        // hero.handleStickyHeaderScroll();
-    }, { passive: true });
+    handleResize() {
+        if (this.isDestroyed || !this.hero) return;
+        
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(() => {
+            if (this.hero && !this.isDestroyed) {
+                this.hero.manageClickToCallButton();
+                this.hero.updateDeviceType();
+            }
+        }, 150); 
+    }
+
+    handleScroll() {
+        if (this.isDestroyed || !this.hero) return;
+
+        this.hero.handleUpperLogoAnimation();
+        this.hero.handleStickyHeaderScroll();
+    }
+
+    cleanup() {
+        this.isDestroyed = true;
+    
+        if (this.resizeTimeout) {
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = null;
+        }
+        
+        window.removeEventListener('resize', this.boundHandlers.resize);
+        window.removeEventListener('scroll', this.boundHandlers.scroll);
+        window.removeEventListener('beforeunload', this.boundHandlers.beforeUnload);
+        
+        if (this.hero && typeof this.hero.stopAnimation === 'function') {
+            this.hero.stopAnimation();
+        }
+        
+        this.hero = null;
+    }
+
+    getHeroInstance() {
+        return this.hero;
+    }
+}
+
+let heroApp;
+let hero; 
+
+document.addEventListener('DOMContentLoaded', () => {
+    heroApp = new HeroApp();
+    heroApp.init();
+    hero = heroApp.getHeroInstance();
+});
+
+window.addEventListener('beforeunload', () => {
+    if (heroApp) {
+        heroApp.cleanup();
+    }
 });
