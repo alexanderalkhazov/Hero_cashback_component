@@ -1,8 +1,19 @@
 class Hero {
+    // Constants
+    static DEVICE_BREAKPOINT = 768;
+    static LOGO_HIDE_THRESHOLD = 120;
+    static SCROLL_THRESHOLD = 4;
+    static BOUNCE_MAX_SCROLL = 200;
+    static ANIMATION_TIMEOUT = 600;
+    static THROTTLE_DELAY = 16;
+
     constructor() {
-        this.isMobile = window.innerWidth < 768;
+        // Device and animation state
+        this.deviceType = this.getDeviceType();
         this.animationFrameId = null;
         this.isAnimating = false;
+        
+        // Element cache
         this.elements = {
             coloredContainer: null,
             unColoredContainer: null,
@@ -10,10 +21,17 @@ class Hero {
             mainBtn: null,
             ctcBtn: null,
             sideText: null,
+            heroContainer: null,
+            companyLogoContainer: null,
+            stickyPlaceholder: null,
         };
-        this.deviceType = this.getDeviceType();
+        
+        // UI state
         this.hasCtcBtn = false;
         this.isUpperLogoHidden = false;
+        this.isUpperLogoTickingAnimation = false;
+        
+        // Scroll state
         this.originalOffsetTop = null;
         this.containerHeight = null;
         this.bounceTriggered = false;
@@ -21,7 +39,6 @@ class Hero {
         this.scrollDisabled = false;
         this.lastScrollY = 0;
         this.snapBackInProgress = false;
-        this.isUpperLogoTickingAnimation = false;
 
         this.init();
     }
@@ -34,123 +51,130 @@ class Hero {
     }
 
     setFrameColorBackground() {
-        const frameContainer = document.querySelector(".colored__frame__container");
-        if (frameContainer) {
-            const url = frameContainer.getAttribute("data-background-url");
+        if (this.elements.coloredContainer) {
+            const url = this.elements.coloredContainer.getAttribute("data-background-url");
             if (url) {
-                frameContainer.style.backgroundImage = `url('${url}')`;
+                this.elements.coloredContainer.style.backgroundImage = `url('${url}')`;
             }
         }
     }
 
+    getHeroContainerAttributes() {
+        if (!this.elements.heroContainer) return null;
+        
+        return {
+            isPublishCTC: this.elements.heroContainer.getAttribute("data-ispublishctc") === "true",
+            ctcBtnColor: this.elements.heroContainer.getAttribute("data-ctcbtn-color"),
+            ctcImageAltText: this.elements.heroContainer.getAttribute("data-altimagectctext"),
+            shouldShowButton: this.elements.heroContainer.getAttribute("data-show-ctc-button") === "true",
+            isAmexWebsite: this.elements.heroContainer.getAttribute("data-isamexwebsite") === "true",
+            iconUrl: this.elements.heroContainer.getAttribute("data-click-to-call-icon") || "",
+            phoneNumber: this.elements.heroContainer.getAttribute("data-phone") || "",
+            urlLink: this.elements.heroContainer.getAttribute("data-url") || ""
+        };
+    }
+
+    createCTCButton(attributes) {
+        const button = document.createElement("button");
+        
+        button.classList.add(
+            attributes.isAmexWebsite ? "amex__btn__theme__sticky__header" : "isracard__btn__theme__sticky__header",
+            "clickToCall__btn",
+            "lower__frame__btns"
+        );
+        
+        if (attributes.ctcBtnColor) {
+            button.style.backgroundColor = attributes.ctcBtnColor;
+        }
+        
+        if (attributes.phoneNumber) button.setAttribute("data-phone", attributes.phoneNumber);
+        if (attributes.urlLink) button.setAttribute("data-url", attributes.urlLink);
+        
+        button.addEventListener("click", function () {
+            handleCtcClick(this);
+        });
+        
+        const icon = document.createElement("img");
+        icon.src = attributes.iconUrl;
+        icon.alt = attributes.ctcImageAltText;
+        button.appendChild(icon);
+        
+        return button;
+    }
+
     manageClickToCallButton() {
-        const isMobile = window.innerWidth < 768;
-        const container = document.querySelector(".lower__part__glass__frame");
-        const existingCTCButton = document.querySelector(".clickToCall__btn");
-
-        if (!container) return;
-
-        if (isMobile) {
-            const heroContainer = document.querySelector(".hero__container");
-            const isPublishCTC =
-                heroContainer?.getAttribute("data-ispublishctc") === "true";
-            const ctcBtnColor = heroContainer?.getAttribute("data-ctcbtn-color");
-            const ctcImageAltText = heroContainer?.getAttribute("data-altimagectctext");
-            const shouldShowButton =
-                heroContainer?.getAttribute("data-show-ctc-button") === "true";
-
-            if (shouldShowButton && !existingCTCButton && isPublishCTC) {
-                const newClickToCallBtn = document.createElement("button");
-                const isAmexWebsite =
-                    heroContainer.getAttribute("data-isamexwebsite") === "true";
-                if (isAmexWebsite) {
-                    newClickToCallBtn.classList.add("amex__btn__theme__sticky__header");
-                } else {
-                    newClickToCallBtn.classList.add("isracard__btn__theme__sticky__header");
-                }
-                newClickToCallBtn.classList.add("clickToCall__btn");
-                if (ctcBtnColor) {
-                    newClickToCallBtn.style.backgroundColor = ctcBtnColor;
-                }
-                newClickToCallBtn.classList.add("lower__frame__btns");
-
-                const iconUrl =
-                    heroContainer?.getAttribute("data-click-to-call-icon") || "";
-                const phoneNumber = heroContainer?.getAttribute("data-phone") || "";
-                const urlLink = heroContainer?.getAttribute("data-url") || "";
-
-                if (phoneNumber)
-                    newClickToCallBtn.setAttribute("data-phone", phoneNumber);
-                if (urlLink) newClickToCallBtn.setAttribute("data-url", urlLink);
-
-                newClickToCallBtn.addEventListener("click", function () {
-                    handleCtcClick(this);
-                });
-
-                const newIconForBtn = document.createElement("img");
-                newIconForBtn.src = iconUrl;
-                newIconForBtn.alt = ctcImageAltText;
-                newClickToCallBtn.appendChild(newIconForBtn);
-                container.appendChild(newClickToCallBtn);
-
-                container.classList.add("has-ctc-btn");
-            } else if (!shouldShowButton && existingCTCButton && !isPublishCTC) {
-                container.removeChild(existingCTCButton);
-                container.classList.remove("has-ctc-btn");
+        if (!this.elements.lowerFrame) return;
+        
+        // Refresh CTC button reference
+        this.elements.ctcBtn = document.querySelector(".clickToCall__btn");
+        
+        if (this.isMobile) {
+            const attributes = this.getHeroContainerAttributes();
+            if (!attributes) return;
+            
+            if (attributes.shouldShowButton && !this.elements.ctcBtn && attributes.isPublishCTC) {
+                this.elements.ctcBtn = this.createCTCButton(attributes);
+                this.elements.lowerFrame.appendChild(this.elements.ctcBtn);
+                this.elements.lowerFrame.classList.add("has-ctc-btn");
+            } else if (!attributes.shouldShowButton && this.elements.ctcBtn && !attributes.isPublishCTC) {
+                this.elements.lowerFrame.removeChild(this.elements.ctcBtn);
+                this.elements.lowerFrame.classList.remove("has-ctc-btn");
+                this.elements.ctcBtn = null;
             }
-
-            const currentCTCButton = document.querySelector(".clickToCall__btn");
-            if (currentCTCButton && container.contains(currentCTCButton)) {
-                container.classList.add("has-ctc-btn");
-            } else {
-                container.classList.remove("has-ctc-btn");
-            }
+            
+            // Update class based on current state
+            this.elements.lowerFrame.classList.toggle(
+                "has-ctc-btn", 
+                this.elements.ctcBtn && this.elements.lowerFrame.contains(this.elements.ctcBtn)
+            );
         } else {
-            if (existingCTCButton && container.contains(existingCTCButton)) {
-                container.removeChild(existingCTCButton);
+            if (this.elements.ctcBtn && this.elements.lowerFrame.contains(this.elements.ctcBtn)) {
+                this.elements.lowerFrame.removeChild(this.elements.ctcBtn);
+                this.elements.ctcBtn = null;
             }
-            container.classList.remove("has-ctc-btn");
+            this.elements.lowerFrame.classList.remove("has-ctc-btn");
         }
     }
 
     getDeviceType() {
-        const width = window.innerWidth;
-        if (width <= 768) return "mobile";
-        return "desktop";
+        return window.innerWidth <= Hero.DEVICE_BREAKPOINT ? "mobile" : "desktop";
     }
 
-    init() {
-        this.elements.coloredContainer = document.querySelector(
-            ".colored__frame__container"
-        );
-        this.elements.unColoredContainer = document.querySelector(
-            ".uncolored__frame__container"
-        );
-        this.elements.lowerFrame = document.querySelector(
-            ".lower__part__glass__frame"
-        );
+    get isMobile() {
+        return this.deviceType === "mobile";
+    }
+
+    cacheElements() {
+        this.elements.coloredContainer = document.querySelector(".colored__frame__container");
+        this.elements.unColoredContainer = document.querySelector(".uncolored__frame__container");
+        this.elements.lowerFrame = document.querySelector(".lower__part__glass__frame");
         this.elements.mainBtn = document.querySelector(".main__order__card__btn");
         this.elements.ctcBtn = document.querySelector(".clickToCall__btn");
         this.elements.sideText = document.querySelector(".side__text__cashback");
+        this.elements.heroContainer = document.querySelector(".hero__container");
+        this.elements.companyLogoContainer = document.querySelector(".company__logo__container");
+    }
 
+    setBorderRadius(element, radius) {
+        if (typeof radius === 'number') {
+            element.style.borderRadius = `${radius}px`;
+        } else {
+            const { top = 0, bottom = 0 } = radius;
+            element.style.borderTopLeftRadius = `${top}px`;
+            element.style.borderTopRightRadius = `${top}px`;
+            element.style.borderBottomLeftRadius = `${bottom}px`;
+            element.style.borderBottomRightRadius = `${bottom}px`;
+        }
+    }
+
+    initializeStyles() {
         if (this.elements.coloredContainer) {
-            this.elements.coloredContainer.style.borderTopLeftRadius = "20px";
-            this.elements.coloredContainer.style.borderTopRightRadius = "20px";
-            this.elements.coloredContainer.style.borderBottomLeftRadius = "20px";
-            this.elements.coloredContainer.style.borderBottomRightRadius = "20px";
+            this.setBorderRadius(this.elements.coloredContainer, 20);
         }
 
         if (this.elements.lowerFrame) {
-            this.elements.lowerFrame.style.borderTopLeftRadius = "0px";
-            this.elements.lowerFrame.style.borderTopRightRadius = "0px";
-            this.elements.lowerFrame.style.borderBottomLeftRadius = "12px";
-            this.elements.lowerFrame.style.borderBottomRightRadius = "12px";
-
-            if (this.deviceType === "desktop") {
-                this.elements.lowerFrame.style.width = "337px";
-            } else {
-                this.elements.lowerFrame.style.width = "228px";
-            }
+            this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: 12 });
+            this.elements.lowerFrame.style.width = this.deviceType === "desktop" ? "337px" : "228px";
         }
 
         if (this.elements.ctcBtn) {
@@ -163,6 +187,16 @@ class Hero {
             this.elements.sideText.style.opacity = "0";
         }
 
+        if (this.elements.companyLogoContainer) {
+            this.elements.companyLogoContainer.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+            this.elements.companyLogoContainer.style.opacity = "1";
+            this.elements.companyLogoContainer.style.transform = "translateY(0)";
+        }
+    }
+
+    init() {
+        this.cacheElements();
+        this.initializeStyles();
         this.setFrameColorBackground();
         this.updateCtcStatus();
         this.startAnimation();
@@ -191,59 +225,29 @@ class Hero {
     animateDesktopGrowColored(progress) {
         if (!this.elements.coloredContainer) return;
 
-        const easedProgress = progress;
         const startWidth = 722;
         const endWidth = window.innerWidth;
-        const width = this.lerp(startWidth, endWidth, easedProgress);
+        const width = this.lerp(startWidth, endWidth, progress);
 
-        this.elements.coloredContainer.style.width = `${Math.min(
-            width,
-            window.innerWidth
-        )}px`;
+        this.elements.coloredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
         this.elements.coloredContainer.style.maxWidth = "100%";
 
-        const topRadius = this.lerp(20, 0, easedProgress);
-        this.elements.coloredContainer.style.borderTopLeftRadius = `${topRadius}px`;
-        this.elements.coloredContainer.style.borderTopRightRadius = `${topRadius}px`;
-
-        const bottomRadius = this.lerp(20, 0, easedProgress);
-        this.elements.coloredContainer.style.borderBottomLeftRadius = `${bottomRadius}px`;
-        this.elements.coloredContainer.style.borderBottomRightRadius = `${bottomRadius}px`;
+        const radius = this.lerp(20, 0, progress);
+        this.setBorderRadius(this.elements.coloredContainer, radius);
     }
 
     animateDesktopGrow(progress) {
         if (!this.elements.unColoredContainer || !this.elements.lowerFrame) return;
 
-        const easedProgress = progress;
+        const uncoloredWidth = this.lerp(722, window.innerWidth, progress);
+        const lowerWidth = this.lerp(337, window.innerWidth, progress);
 
-        const uncoloredStartWidth = 722;
-        const uncoloredEndWidth = window.innerWidth;
-        const uncoloredWidth = this.lerp(
-            uncoloredStartWidth,
-            uncoloredEndWidth,
-            easedProgress
-        );
-
-        const lowerStartWidth = 337;
-        const lowerEndWidth = window.innerWidth;
-        const lowerWidth = this.lerp(lowerStartWidth, lowerEndWidth, easedProgress);
-
-        this.elements.unColoredContainer.style.width = `${Math.min(
-            uncoloredWidth,
-            window.innerWidth
-        )}px`;
-
-        this.elements.lowerFrame.style.width = `${Math.min(
-            lowerWidth,
-            window.innerWidth
-        )}px`;
+        this.elements.unColoredContainer.style.width = `${Math.min(uncoloredWidth, window.innerWidth)}px`;
+        this.elements.lowerFrame.style.width = `${Math.min(lowerWidth, window.innerWidth)}px`;
         this.elements.lowerFrame.style.maxWidth = "none";
 
-        const bottomRadius = this.lerp(12, 0, easedProgress);
-        this.elements.lowerFrame.style.borderTopLeftRadius = "0px";
-        this.elements.lowerFrame.style.borderTopRightRadius = "0px";
-        this.elements.lowerFrame.style.borderBottomLeftRadius = `${bottomRadius}px`;
-        this.elements.lowerFrame.style.borderBottomRightRadius = `${bottomRadius}px`;
+        const bottomRadius = this.lerp(12, 0, progress);
+        this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: bottomRadius });
     }
 
     animateDesktopMainBtn(progress) {
@@ -317,58 +321,29 @@ class Hero {
     animateMobileGrowColored(progress) {
         if (!this.elements.coloredContainer) return;
 
-        const easedProgress = progress;
-        const startWidth = 354;
-        const endWidth = window.innerWidth;
-        const width = this.lerp(startWidth, endWidth, easedProgress);
+        const width = this.lerp(354, window.innerWidth, progress);
+        this.elements.coloredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
 
-        this.elements.coloredContainer.style.width = `${Math.min(
-            width,
-            window.innerWidth
-        )}px`;
-
-        const topRadius = this.lerp(20, 0, easedProgress);
-        this.elements.coloredContainer.style.borderTopLeftRadius = `${topRadius}px`;
-        this.elements.coloredContainer.style.borderTopRightRadius = `${topRadius}px`;
-
-        const bottomRadius = this.lerp(20, 0, easedProgress);
-        this.elements.coloredContainer.style.borderBottomLeftRadius = `${bottomRadius}px`;
-        this.elements.coloredContainer.style.borderBottomRightRadius = `${bottomRadius}px`;
+        const radius = this.lerp(20, 0, progress);
+        this.setBorderRadius(this.elements.coloredContainer, radius);
     }
 
     animateMobileGrowUnColored(progress) {
         if (!this.elements.unColoredContainer) return;
 
-        const easedProgress = progress;
-        const startWidth = 228;
-        const endWidth = window.innerWidth;
-        const width = this.lerp(startWidth, endWidth, easedProgress);
-
-        this.elements.unColoredContainer.style.width = `${Math.min(
-            width,
-            window.innerWidth
-        )}px`;
+        const width = this.lerp(228, window.innerWidth, progress);
+        this.elements.unColoredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
     }
 
     animateMobileGrowLowerFrame(progress) {
         if (!this.elements.lowerFrame) return;
 
-        const easedProgress = progress;
-        const startWidth = 228;
-        const endWidth = window.innerWidth;
-        const width = this.lerp(startWidth, endWidth, easedProgress);
-
-        this.elements.lowerFrame.style.width = `${Math.min(
-            width,
-            window.innerWidth
-        )}px`;
+        const width = this.lerp(228, window.innerWidth, progress);
+        this.elements.lowerFrame.style.width = `${Math.min(width, window.innerWidth)}px`;
         this.elements.lowerFrame.style.maxWidth = "none";
 
-        const bottomRadius = this.lerp(12, 0, easedProgress);
-        this.elements.lowerFrame.style.borderTopLeftRadius = "0px";
-        this.elements.lowerFrame.style.borderTopRightRadius = "0px";
-        this.elements.lowerFrame.style.borderBottomLeftRadius = `${bottomRadius}px`;
-        this.elements.lowerFrame.style.borderBottomRightRadius = `${bottomRadius}px`;
+        const bottomRadius = this.lerp(12, 0, progress);
+        this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: bottomRadius });
     }
 
     animateMobileMainBtn(progress) {
@@ -478,119 +453,106 @@ class Hero {
         const newDeviceType = this.getDeviceType();
         if (newDeviceType !== this.deviceType) {
             this.deviceType = newDeviceType;
-            this.init();
+            this.cacheElements(); // Refresh cached elements
+            this.initializeStyles();
+            this.updateCtcStatus();
         }
     }
     handleScrollUpperLogo() {
-        let isHidden = false;
-        const container = document.querySelector(".company__logo__container");
-        if (!container) return;
-        container.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-        container.style.opacity = "1";
-        container.style.transform = "translateY(0)";
+        if (!this.elements.companyLogoContainer) return;
+        
         const scrollY = window.scrollY;
-        const hideThreshold = 120;
-        if (scrollY > hideThreshold && !isHidden) {
-            container.style.opacity = "0";
-            container.style.transform = "translateY(-20px)";
-            container.style.pointerEvents = "none";
-            isHidden = true;
-        } else if (scrollY <= hideThreshold && isHidden) {
-            container.style.opacity = "1";
-            container.style.transform = "translateY(0)";
-            container.style.pointerEvents = "auto";
-            isHidden = false;
+        
+        if (scrollY > Hero.LOGO_HIDE_THRESHOLD && !this.isUpperLogoHidden) {
+            this.elements.companyLogoContainer.style.opacity = "0";
+            this.elements.companyLogoContainer.style.transform = "translateY(-20px)";
+            this.elements.companyLogoContainer.style.pointerEvents = "none";
+            this.isUpperLogoHidden = true;
+        } else if (scrollY <= Hero.LOGO_HIDE_THRESHOLD && this.isUpperLogoHidden) {
+            this.elements.companyLogoContainer.style.opacity = "1";
+            this.elements.companyLogoContainer.style.transform = "translateY(0)";
+            this.elements.companyLogoContainer.style.pointerEvents = "auto";
+            this.isUpperLogoHidden = false;
         }
     }
 
     handleUpperLogoAnimation() {
         if (!this.isUpperLogoTickingAnimation) {
-            window.requestAnimationFrame(hero.handleScrollUpperLogo);
+            window.requestAnimationFrame(() => this.handleScrollUpperLogo());
             this.isUpperLogoTickingAnimation = true;
             setTimeout(() => {
                 this.isUpperLogoTickingAnimation = false;
-            }, 16);
+            }, Hero.THROTTLE_DELAY);
         }
+    }    createScrollTimeout(callback) {
+        return setTimeout(callback, Hero.ANIMATION_TIMEOUT);
     }
 
     handleStickyHeaderScroll() {
-        if (hero.scrollDisabled || hero.isScrolling) return;
+        if (this.scrollDisabled || this.isScrolling || !this.elements.unColoredContainer) return;
+        
         const currentScrollY = window.scrollY;
+        if (Math.abs(currentScrollY - this.lastScrollY) < 1) return;
+        
+        this.lastScrollY = currentScrollY;
 
-        if (Math.abs(currentScrollY - hero.lastScrollY) < 1) {
-            return;
+        // Initialize offset values if not set
+        if (this.originalOffsetTop === null) {
+            this.originalOffsetTop = this.elements.unColoredContainer.offsetTop;
+            this.containerHeight = this.elements.unColoredContainer.offsetHeight;
         }
-        hero.lastScrollY = currentScrollY;
 
-        if (hero.originalOffsetTop === null) {
-            hero.originalOffsetTop = hero.elements.unColoredContainer.offsetTop;
-            hero.containerHeight = hero.elements.unColoredContainer.offsetHeight;
-        }
+        const lowerRect = this.elements.unColoredContainer.getBoundingClientRect();
 
-        const lowerRect = hero.elements.unColoredContainer.getBoundingClientRect();
-        const threshold = 4;
-
+        // Reset bounce trigger at top
         if (currentScrollY <= 10) {
-            hero.bounceTriggered = false;
-            window.lastScrollY = 0;
+            this.bounceTriggered = false;
         }
 
+        // Handle bounce behavior
         if (
-            currentScrollY >= threshold &&
-            currentScrollY < 200 &&
-            !hero.bounceTriggered &&
-            !hero.snapBackInProgress
+            currentScrollY >= Hero.SCROLL_THRESHOLD &&
+            currentScrollY < Hero.BOUNCE_MAX_SCROLL &&
+            !this.bounceTriggered &&
+            !this.snapBackInProgress
         ) {
-            const scrollDirection =
-                currentScrollY > (window.lastScrollY || 0) ? "down" : "up";
-            window.lastScrollY = currentScrollY;
-
-            if (scrollDirection === "down") {
-                hero.bounceTriggered = true;
-                hero.snapBackInProgress = true;
-                window.scrollTo({
-                    top: hero.originalOffsetTop,
-                    behavior: "smooth",
-                });
-
-                setTimeout(() => {
-                    hero.snapBackInProgress = false;
-                }, 600);
-            }
+            this.bounceTriggered = true;
+            this.snapBackInProgress = true;
+            window.scrollTo({ top: this.originalOffsetTop, behavior: "smooth" });
+            this.createScrollTimeout(() => { this.snapBackInProgress = false; });
         }
 
-        if (currentScrollY < threshold && hero.bounceTriggered) {
-            hero.bounceTriggered = false;
+        // Reset bounce trigger
+        if (currentScrollY < Hero.SCROLL_THRESHOLD && this.bounceTriggered) {
+            this.bounceTriggered = false;
         }
 
-        if (lowerRect.top <= 0 && !hero.elements.unColoredContainer.classList.contains("sticky")) {
-            const placeholder = document.createElement("div");
-            placeholder.style.height = hero.containerHeight + "px";
-            placeholder.classList.add("sticky-placeholder");
-            hero.elements.unColoredContainer.parentNode.insertBefore(placeholder, hero.elements.unColoredContainer);
-            hero.elements.unColoredContainer.classList.add("sticky");
+        // Handle sticky behavior
+        if (lowerRect.top <= 0 && !this.elements.unColoredContainer.classList.contains("sticky")) {
+            this.elements.stickyPlaceholder = document.createElement("div");
+            this.elements.stickyPlaceholder.style.height = this.containerHeight + "px";
+            this.elements.stickyPlaceholder.classList.add("sticky-placeholder");
+            this.elements.unColoredContainer.parentNode.insertBefore(
+                this.elements.stickyPlaceholder,
+                this.elements.unColoredContainer
+            );
+            this.elements.unColoredContainer.classList.add("sticky");
         }
 
+        // Handle unstick behavior
         if (
-            currentScrollY < hero.originalOffsetTop &&
-            hero.elements.unColoredContainer.classList.contains("sticky") &&
-            !hero.snapBackInProgress
+            currentScrollY < this.originalOffsetTop &&
+            this.elements.unColoredContainer.classList.contains("sticky") &&
+            !this.snapBackInProgress
         ) {
-            const placeholder = document.querySelector(".sticky-placeholder");
-            if (placeholder) {
-                placeholder.remove();
-
-                hero.snapBackInProgress = true;
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth",
-                });
-
-                setTimeout(() => {
-                    hero.snapBackInProgress = false;
-                }, 600);
+            if (this.elements.stickyPlaceholder) {
+                this.elements.stickyPlaceholder.remove();
+                this.elements.stickyPlaceholder = null;
+                this.snapBackInProgress = true;
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                this.createScrollTimeout(() => { this.snapBackInProgress = false; });
             }
-            hero.elements.unColoredContainer.classList.remove("sticky");
+            this.elements.unColoredContainer.classList.remove("sticky");
         }
     }
 }
@@ -610,6 +572,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("scroll", () => {
         if (!hero) return;
         hero.handleUpperLogoAnimation();
-        hero.handleStickyHeaderScroll();
+        // hero.handleStickyHeaderScroll();
     }, { passive: true });
 });
