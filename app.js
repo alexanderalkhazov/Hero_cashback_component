@@ -35,7 +35,6 @@ class Hero {
         this.containerHeight = null;
         this.bounceTriggered = false;
         this.isScrolling = false;
-        this.scrollDisabled = false;
         this.lastScrollY = 0;
         this.snapBackInProgress = false;
 
@@ -504,7 +503,7 @@ class Hero {
     }
 
     handleStickyHeaderScroll() {
-        if (this.scrollDisabled || this.isScrolling || !this.elements.unColoredContainer) return;
+        if (this.isScrolling || !this.elements.unColoredContainer) return;
 
         const currentScrollY = window.scrollY;
         if (Math.abs(currentScrollY - this.lastScrollY) < 1) return;
