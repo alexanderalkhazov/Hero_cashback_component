@@ -497,6 +497,12 @@ class Hero {
         return setTimeout(callback, Hero.ANIMATION_TIMEOUT);
     }
 
+    // Add method to detect Chrome iOS specifically
+    isChromeiOS() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        return /iPad|iPhone|iPod/.test(userAgent) && /CriOS/.test(userAgent);
+    }
+
     handleStickyHeaderScroll() {
         if (this.scrollDisabled || this.isScrolling || !this.elements.unColoredContainer) return;
 
@@ -532,7 +538,6 @@ class Hero {
             this.bounceTriggered = false;
         }
 
-
         if (lowerRect.top <= 0 && !this.elements.unColoredContainer.classList.contains("sticky")) {
             this.elements.stickyPlaceholder = document.createElement("div");
             this.elements.stickyPlaceholder.style.height = this.containerHeight + "px";
@@ -542,6 +547,11 @@ class Hero {
                 this.elements.unColoredContainer
             );
             this.elements.unColoredContainer.classList.add("sticky");
+            
+            // Fix for Chrome iOS only
+            if (this.isMobile && this.isChromeiOS()) {
+                this.adjustStickyPosition();
+            }
         }
 
         if (
@@ -557,7 +567,23 @@ class Hero {
                 this.createScrollTimeout(() => { this.snapBackInProgress = false; });
             }
             this.elements.unColoredContainer.classList.remove("sticky");
+            // Reset top position for Chrome iOS only
+            if (this.isMobile && this.isChromeiOS()) {
+                this.elements.unColoredContainer.style.top = '';
+            }
         }
+    }
+
+    // Modify this method to only work on Chrome iOS
+    adjustStickyPosition() {
+        if (!this.isMobile || !this.isChromeiOS() || !this.elements.unColoredContainer.classList.contains("sticky")) return;
+        
+        // Calculate the difference between visual viewport and layout viewport
+        const visualViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        const layoutViewportHeight = window.innerHeight;
+        const topOffset = Math.max(0, layoutViewportHeight - visualViewportHeight);
+        
+        this.elements.unColoredContainer.style.top = `${topOffset}px`;
     }
 }
 
@@ -588,6 +614,17 @@ class HeroApp {
         window.addEventListener('resize', this.boundHandlers.resize, { passive: true });
         window.addEventListener('scroll', this.boundHandlers.scroll, { passive: true });
         window.addEventListener('beforeunload', this.boundHandlers.beforeUnload);
+        
+        // Add visual viewport listener specifically for Chrome iOS only
+        if (window.visualViewport && this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
+            this.boundHandlers.viewportChange = () => {
+                if (this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
+                    this.hero.adjustStickyPosition();
+                }
+            };
+            window.visualViewport.addEventListener('resize', this.boundHandlers.viewportChange);
+            window.visualViewport.addEventListener('scroll', this.boundHandlers.viewportChange);
+        }
     }
 
     handleResize() {
@@ -611,7 +648,7 @@ class HeroApp {
 
     cleanup() {
         this.isDestroyed = true;
-    
+
         if (this.resizeTimeout) {
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = null;
@@ -620,6 +657,12 @@ class HeroApp {
         window.removeEventListener('resize', this.boundHandlers.resize);
         window.removeEventListener('scroll', this.boundHandlers.scroll);
         window.removeEventListener('beforeunload', this.boundHandlers.beforeUnload);
+        
+        // Clean up visual viewport listeners for Chrome iOS only
+        if (window.visualViewport && this.boundHandlers.viewportChange && this.hero && this.hero.isChromeiOS()) {
+            window.visualViewport.removeEventListener('resize', this.boundHandlers.viewportChange);
+            window.visualViewport.removeEventListener('scroll', this.boundHandlers.viewportChange);
+        }
         
         if (this.hero && typeof this.hero.stopAnimation === 'function') {
             this.hero.stopAnimation();
