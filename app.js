@@ -1,7 +1,7 @@
 class Hero {
     static DEVICE_BREAKPOINT = 768;
     static LOGO_HIDE_THRESHOLD = 120;
-    static SCROLL_THRESHOLD = 20;
+    static SCROLL_THRESHOLD = 35;
     static BOUNCE_MAX_SCROLL = 200;
     static ANIMATION_TIMEOUT = 600;
     static THROTTLE_DELAY = 16;
@@ -31,12 +31,19 @@ class Hero {
         this.isUpperLogoTickingAnimation = false;
 
         // Scroll state
-        this.originalOffsetTop = null;
-        this.containerHeight = null;
-        this.bounceTriggered = false;
-        this.isScrolling = false;
+        // this.originalOffsetTop = null;
+        // this.containerHeight = null;
+        // this.bounceTriggered = false;
+        // this.isScrolling = false;
+        // this.lastScrollY = 0;
+        // this.snapBackInProgress = false;
+
+
+        // new scroll state
+        this.isInitialized = false;
+        this.hasSnapped = false;
         this.lastScrollY = 0;
-        this.snapBackInProgress = false;
+
 
         this.init();
     }
@@ -496,92 +503,63 @@ class Hero {
         return setTimeout(callback, Hero.ANIMATION_TIMEOUT);
     }
 
-    // Add method to detect Chrome iOS specifically
     isChromeiOS() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         return /iPad|iPhone|iPod/.test(userAgent) && /CriOS/.test(userAgent);
     }
 
     handleStickyHeaderScroll() {
-        if (this.isScrolling || !this.elements.unColoredContainer) return;
-
-        const currentScrollY = window.scrollY;
-        if (Math.abs(currentScrollY - this.lastScrollY) < 1) return;
-
-        this.lastScrollY = currentScrollY;
-
-        if (this.originalOffsetTop === null) {
-            this.originalOffsetTop = this.elements.unColoredContainer.offsetTop;
-            this.containerHeight = this.elements.unColoredContainer.offsetHeight;
+        const scrollY = window.scrollY;
+        if (!this.isInitialized) {
+            this.lastScrollY = scrollY;
+            this.isInitialized = true;
+            return;
         }
 
-        const lowerRect = this.elements.unColoredContainer.getBoundingClientRect();
+        const scrollDirection = this.lastScrollY < scrollY ? "down" : "up";
 
-        if (currentScrollY <= 10) {
-            this.bounceTriggered = false;
+        if (scrollY <= 5) {
+            this.hasSnapped = false;
         }
 
-        if (
-            currentScrollY >= Hero.SCROLL_THRESHOLD &&
-            currentScrollY < Hero.BOUNCE_MAX_SCROLL &&
-            !this.bounceTriggered &&
-            !this.snapBackInProgress
-        ) {
-            this.bounceTriggered = true;
-            this.snapBackInProgress = true;
-            window.scrollTo({ top: this.originalOffsetTop, behavior: "smooth" });
-            this.createScrollTimeout(() => { this.snapBackInProgress = false; });
+        const justCrossedThreshold = this.lastScrollY < Hero.SCROLL_THRESHOLD && scrollY >= Hero.SCROLL_THRESHOLD;
+
+        if (scrollDirection === "down" && justCrossedThreshold && !this.hasSnapped) {
+            this.hasSnapped = true;
+            const container = document.querySelector('.uncolored__frame__container');
+            const containerRect = container.getBoundingClientRect();
+            const containerTopPosition = containerRect.top + window.scrollY;
+            console.log("Snapping to container at position:", containerTopPosition);
+            window.scrollTo({
+                top: containerTopPosition,
+                behavior: "smooth"
+            });
         }
 
-        if (currentScrollY < Hero.SCROLL_THRESHOLD && this.bounceTriggered) {
-            this.bounceTriggered = false;
+        const container = document.querySelector('.uncolored__frame__container');
+        const containerRect = container.getBoundingClientRect();
+        const topOfContainer = containerRect.top;
+
+        if (scrollDirection === "up" && this.hasSnapped && topOfContainer > 0) {
+            console.log("Snapping to top of page");
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+            this.hasSnapped = false;
         }
 
-        if (lowerRect.top <= 0 && !this.elements.unColoredContainer.classList.contains("sticky")) {
-            this.elements.stickyPlaceholder = document.createElement("div");
-            this.elements.stickyPlaceholder.style.height = this.containerHeight + "px";
-            this.elements.stickyPlaceholder.classList.add("sticky-placeholder");
-            this.elements.unColoredContainer.parentNode.insertBefore(
-                this.elements.stickyPlaceholder,
-                this.elements.unColoredContainer
-            );
-            this.elements.unColoredContainer.classList.add("sticky");
-            
-            // Fix for Chrome iOS only
-            if (this.isMobile && this.isChromeiOS()) {
-                this.adjustStickyPosition();
-            }
-        }
-
-        if (
-            currentScrollY < this.originalOffsetTop &&
-            this.elements.unColoredContainer.classList.contains("sticky") &&
-            !this.snapBackInProgress
-        ) {
-            if (this.elements.stickyPlaceholder) {
-                this.elements.stickyPlaceholder.remove();
-                this.elements.stickyPlaceholder = null;
-                this.snapBackInProgress = true;
-                window.scrollTo({ top: 0, behavior: "smooth" });
-                this.createScrollTimeout(() => { this.snapBackInProgress = false; });
-            }
-            this.elements.unColoredContainer.classList.remove("sticky");
-            // Reset top position for Chrome iOS only
-            if (this.isMobile && this.isChromeiOS()) {
-                this.elements.unColoredContainer.style.top = '';
-            }
-        }
+        this.lastScrollY = scrollY;
     }
 
-    // Modify this method to only work on Chrome iOS
     adjustStickyPosition() {
         if (!this.isMobile || !this.isChromeiOS() || !this.elements.unColoredContainer.classList.contains("sticky")) return;
-        
-        // Calculate the difference between visual viewport and layout viewport
+
         const visualViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         const layoutViewportHeight = window.innerHeight;
         const topOffset = Math.max(0, layoutViewportHeight - visualViewportHeight);
-        
+
         this.elements.unColoredContainer.style.top = `${topOffset}px`;
     }
 }
@@ -591,7 +569,7 @@ class HeroApp {
         this.hero = null;
         this.resizeTimeout = null;
         this.isDestroyed = false;
-        
+
         this.boundHandlers = {
             resize: this.handleResize.bind(this),
             scroll: this.handleScroll.bind(this),
@@ -613,7 +591,7 @@ class HeroApp {
         window.addEventListener('resize', this.boundHandlers.resize, { passive: true });
         window.addEventListener('scroll', this.boundHandlers.scroll, { passive: true });
         window.addEventListener('beforeunload', this.boundHandlers.beforeUnload);
-        
+
         // Add visual viewport listener specifically for Chrome iOS only
         if (window.visualViewport && this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
             this.boundHandlers.viewportChange = () => {
@@ -628,14 +606,14 @@ class HeroApp {
 
     handleResize() {
         if (this.isDestroyed || !this.hero) return;
-        
+
         clearTimeout(this.resizeTimeout);
         this.resizeTimeout = setTimeout(() => {
             if (this.hero && !this.isDestroyed) {
                 this.hero.manageClickToCallButton();
                 this.hero.updateDeviceType();
             }
-        }, 150); 
+        }, 150);
     }
 
     handleScroll() {
@@ -652,21 +630,21 @@ class HeroApp {
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = null;
         }
-        
+
         window.removeEventListener('resize', this.boundHandlers.resize);
         window.removeEventListener('scroll', this.boundHandlers.scroll);
         window.removeEventListener('beforeunload', this.boundHandlers.beforeUnload);
-        
+
         // Clean up visual viewport listeners for Chrome iOS only
         if (window.visualViewport && this.boundHandlers.viewportChange && this.hero && this.hero.isChromeiOS()) {
             window.visualViewport.removeEventListener('resize', this.boundHandlers.viewportChange);
             window.visualViewport.removeEventListener('scroll', this.boundHandlers.viewportChange);
         }
-        
+
         if (this.hero && typeof this.hero.stopAnimation === 'function') {
             this.hero.stopAnimation();
         }
-        
+
         this.hero = null;
     }
 
@@ -676,7 +654,7 @@ class HeroApp {
 }
 
 let heroApp;
-let hero; 
+let hero;
 
 document.addEventListener('DOMContentLoaded', () => {
     heroApp = new HeroApp();
