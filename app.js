@@ -44,7 +44,6 @@ class Hero {
         this.hasSnapped = false;
         this.lastScrollY = 0;
 
-
         this.init();
     }
 
@@ -510,6 +509,7 @@ class Hero {
 
     handleStickyHeaderScroll() {
         const scrollY = window.scrollY;
+
         if (!this.isInitialized) {
             this.lastScrollY = scrollY;
             this.isInitialized = true;
@@ -520,6 +520,7 @@ class Hero {
 
         if (scrollY <= 5) {
             this.hasSnapped = false;
+            this.stickyAppliedAtPosition = null;
         }
 
         const justCrossedThreshold = this.lastScrollY < Hero.SCROLL_THRESHOLD && scrollY >= Hero.SCROLL_THRESHOLD;
@@ -529,27 +530,48 @@ class Hero {
             const container = document.querySelector('.uncolored__frame__container');
             const containerRect = container.getBoundingClientRect();
             const containerTopPosition = containerRect.top + window.scrollY;
-            console.log("Snapping to container at position:", containerTopPosition);
+            this.stickyAppliedAtPosition = containerTopPosition;
+
             window.scrollTo({
                 top: containerTopPosition,
                 behavior: "smooth"
             });
+
+            setTimeout(() => {
+                if (!container.classList.contains("sticky")) {
+                    container.classList.add("sticky");
+                    this.adjustStickyPosition();
+                }
+            }, 400);
         }
 
         const container = document.querySelector('.uncolored__frame__container');
         const containerRect = container.getBoundingClientRect();
         const topOfContainer = containerRect.top;
 
-        if (scrollDirection === "up" && this.hasSnapped && topOfContainer > 0) {
+        if (
+            scrollDirection === "up" &&
+            this.hasSnapped &&
+            this.stickyAppliedAtPosition !== null &&
+            scrollY < this.stickyAppliedAtPosition &&
+            topOfContainer >= -5 &&
+            topOfContainer <= 5
+        ) {
             console.log("Snapping to top of page");
+
+            if (container.classList.contains("sticky")) {
+                container.classList.remove("sticky")
+            }
+
             window.scrollTo({
                 top: 0,
                 behavior: "smooth"
             });
 
             this.hasSnapped = false;
+            this.stickyAppliedAtPosition = null;
         }
-
+        
         this.lastScrollY = scrollY;
     }
 
