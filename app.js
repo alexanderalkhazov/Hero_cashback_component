@@ -30,19 +30,11 @@ class Hero {
     this.isUpperLogoHidden = false;
     this.isUpperLogoTickingAnimation = false;
 
-    // Scroll state
-    // this.originalOffsetTop = null;
-    // this.containerHeight = null;
-    // this.bounceTriggered = false;
-    // this.isScrolling = false;
-    // this.lastScrollY = 0;
-    // this.snapBackInProgress = false;
-
-
-    // new scroll state
-    this.isInitialized = false;
-    this.hasSnapped = false;
+    // Scroll snap state
     this.lastScrollY = 0;
+    this.stickyHeaderOriginalY = null;
+    this.snapToUncoloredDone = false;
+    this.snapToTopDone = false;
 
     this.init();
   }
@@ -517,71 +509,65 @@ class Hero {
     this.elements.unColoredContainer.style.top = `${topOffset}px`;
   }
 
-  handleStickyHeaderScroll() {
-    const scrollY = window.scrollY;
-
-    if (!this.isInitialized) {
-      this.lastScrollY = scrollY;
-      this.isInitialized = true;
-      return;
-    }
-
-    const scrollDirection = this.lastScrollY < scrollY ? "down" : "up";
-
-    if (scrollY <= 5) {
-      this.hasSnapped = false;
-      this.stickyAppliedAtPosition = null;
-    }
-
-    const justCrossedThreshold = this.lastScrollY < Hero.SCROLL_THRESHOLD && scrollY >= Hero.SCROLL_THRESHOLD;
-
-    if (scrollDirection === "down" && justCrossedThreshold && !this.hasSnapped) {
-      this.hasSnapped = true;
-      const container = this.elements.unColoredContainer;
-      const containerRect = container.getBoundingClientRect();
-      const containerTopPosition = containerRect.top + window.scrollY;
-      this.stickyAppliedAtPosition = containerTopPosition;
-
-      window.scrollTo({
-        top: containerTopPosition,
-        behavior: "smooth"
-      });
-
-      if (!container.classList.contains("sticky")) {
-        container.classList.add("sticky");
-        this.adjustStickyPosition();
-      }
-    }
-
+  manageStickyHeader() {
     const container = this.elements.unColoredContainer;
-    const containerRect = container.getBoundingClientRect();
-    const topOfContainer = containerRect.top;
+    if (!container) return;
+
+    if (this.stickyHeaderOriginalY === null || this.needsRecalculation) {
+      const rect = container.getBoundingClientRect();
+      this.stickyHeaderOriginalY = rect.top + window.scrollY;
+      this.needsRecalculation = false;
+    }
+
+    const scrollY = window.scrollY;
+    const isBelowOriginalPos = scrollY >= this.stickyHeaderOriginalY;
+
+    if (isBelowOriginalPos && !container.classList.contains('sticky')) {
+      container.classList.add('sticky');
+      this.adjustStickyPosition();
+    } else if (!isBelowOriginalPos && container.classList.contains('sticky')) {
+      container.classList.remove('sticky');
+    }
+  }
+
+  handleSnapScroll() {
+    const scrollY = window.scrollY;
+    const scrollDirection = this.lastScrollY < scrollY ? 'down' : 'up';
+
+    if (!this.elements.unColoredContainer) return;
+    if (this.stickyHeaderOriginalY === null) {
+      const rect = this.elements.unColoredContainer.getBoundingClientRect();
+      this.stickyHeaderOriginalY = rect.top + window.scrollY;
+    }
 
     if (
-      scrollDirection === "up" &&
-      this.hasSnapped &&
-      this.stickyAppliedAtPosition !== null &&
-      scrollY < this.stickyAppliedAtPosition &&
-      topOfContainer >= -5 &&
-      topOfContainer <= 5
+      scrollDirection === 'down' &&
+      !this.snapToUncoloredDone &&
+      scrollY <= Hero.SCROLL_THRESHOLD
     ) {
+      this.snapToUncoloredDone = true;
+      this.snapToTopDone = false;
+      window.scrollTo({
+        top: this.stickyHeaderOriginalY,
+        behavior: 'smooth',
+      });
+    }
 
-      if (container.classList.contains("sticky")) {
-        container.classList.remove("sticky")
-      }
-
+    if (
+      scrollDirection === 'up' &&
+      !this.snapToTopDone &&
+      scrollY < this.stickyHeaderOriginalY - 20
+    ) {
+      this.snapToTopDone = true;
+      this.snapToUncoloredDone = false;
       window.scrollTo({
         top: 0,
-        behavior: "smooth"
+        behavior: 'smooth',
       });
-
-      this.hasSnapped = false;
-      this.stickyAppliedAtPosition = null;
     }
 
     this.lastScrollY = scrollY;
   }
-
 }
 
 class HeroApp {
@@ -612,7 +598,6 @@ class HeroApp {
     window.addEventListener('scroll', this.boundHandlers.scroll, { passive: true });
     window.addEventListener('beforeunload', this.boundHandlers.beforeUnload);
 
-    // Add visual viewport listener specifically for Chrome iOS only
     if (window.visualViewport && this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
       this.boundHandlers.viewportChange = () => {
         if (this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
@@ -640,7 +625,8 @@ class HeroApp {
     if (this.isDestroyed || !this.hero) return;
 
     this.hero.handleUpperLogoAnimation();
-    this.hero.handleStickyHeaderScroll();
+    this.hero.handleSnapScroll();
+    this.hero.manageStickyHeader();
   }
 
   cleanup() {
@@ -655,7 +641,6 @@ class HeroApp {
     window.removeEventListener('scroll', this.boundHandlers.scroll);
     window.removeEventListener('beforeunload', this.boundHandlers.beforeUnload);
 
-    // Clean up visual viewport listeners for Chrome iOS only
     if (window.visualViewport && this.boundHandlers.viewportChange && this.hero && this.hero.isChromeiOS()) {
       window.visualViewport.removeEventListener('resize', this.boundHandlers.viewportChange);
       window.visualViewport.removeEventListener('scroll', this.boundHandlers.viewportChange);
