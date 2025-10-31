@@ -629,6 +629,12 @@ class HeroApp {
     this.hero.manageStickyHeader();
   }
 
+  onPageLoadCheckStickyHeaderOrder() {
+    if (this.hero) {
+      this.hero.manageStickyHeader();
+    }
+  }
+
   cleanup() {
     this.isDestroyed = true;
 
@@ -664,6 +670,7 @@ let hero;
 document.addEventListener('DOMContentLoaded', () => {
   heroApp = new HeroApp();
   heroApp.init();
+  heroApp.onPageLoadCheckStickyHeaderOrder();
   hero = heroApp.getHeroInstance();
 });
 
