@@ -547,12 +547,10 @@ class Hero {
         behavior: "smooth"
       });
 
-      setTimeout(() => {
-        if (!container.classList.contains("sticky")) {
-          container.classList.add("sticky");
-          this.adjustStickyPosition();
-        }
-      }, 400);
+      if (!container.classList.contains("sticky")) {
+        container.classList.add("sticky");
+        this.adjustStickyPosition();
+      }
     }
 
     const container = this.elements.unColoredContainer;
@@ -567,7 +565,7 @@ class Hero {
       topOfContainer >= -5 &&
       topOfContainer <= 5
     ) {
-      
+
       if (container.classList.contains("sticky")) {
         container.classList.remove("sticky")
       }
