@@ -30,7 +30,7 @@ class Hero {
     this.isUpperLogoHidden = false;
     this.isUpperLogoTickingAnimation = false;
 
-    // Scroll snap state
+        // new scroll state
     this.lastScrollY = 0;
     this.stickyHeaderOriginalY = null;
     this.snapToUncoloredDone = false;
@@ -536,7 +536,7 @@ class Hero {
     if (
       scrollDirection === 'down' &&
       !this.snapToUncoloredDone &&
-      scrollY <= Hero.SCROLL_THRESHOLD
+      scrollY >= Hero.SCROLL_THRESHOLD
     ) {
       this.snapToUncoloredDone = true;
       this.snapToTopDone = false;
@@ -549,7 +549,7 @@ class Hero {
     if (
       scrollDirection === 'up' &&
       !this.snapToTopDone &&
-      scrollY < this.stickyHeaderOriginalY - 20
+      scrollY < this.stickyHeaderOriginalY
     ) {
       this.snapToTopDone = true;
       this.snapToUncoloredDone = false;
