@@ -39,13 +39,6 @@ class Hero {
     this.init();
   }
 
-  startPageAtTop() {
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
-    }
-    window.scrollTo(0, 0);
-  }
-
   setFrameColorBackground() {
     if (this.elements.coloredContainer) {
       const url = this.elements.coloredContainer.getAttribute("data-background-url");
