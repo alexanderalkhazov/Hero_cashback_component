@@ -537,7 +537,7 @@ class Hero {
 
     if (scrollDirection === "down" && justCrossedThreshold && !this.hasSnapped) {
       this.hasSnapped = true;
-      const container = document.querySelector('.uncolored__frame__container');
+      const container = this.elements.unColoredContainer;
       const containerRect = container.getBoundingClientRect();
       const containerTopPosition = containerRect.top + window.scrollY;
       this.stickyAppliedAtPosition = containerTopPosition;
@@ -555,7 +555,7 @@ class Hero {
       }, 400);
     }
 
-    const container = document.querySelector('.uncolored__frame__container');
+    const container = this.elements.unColoredContainer;
     const containerRect = container.getBoundingClientRect();
     const topOfContainer = containerRect.top;
 
@@ -567,8 +567,7 @@ class Hero {
       topOfContainer >= -5 &&
       topOfContainer <= 5
     ) {
-      console.log("Snapping to top of page");
-
+      
       if (container.classList.contains("sticky")) {
         container.classList.remove("sticky")
       }
