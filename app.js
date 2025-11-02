@@ -448,6 +448,11 @@ class Hero {
     }
   }
 
+  cleanup() {
+    this.removeStickyPlaceholder();
+    this.stopAnimation();
+  }
+
   updateDeviceType() {
     const newDeviceType = this.getDeviceType();
     if (newDeviceType !== this.deviceType) {
@@ -518,10 +523,38 @@ class Hero {
     const isBelowOriginalPos = scrollY >= this.stickyHeaderOriginalY;
 
     if (isBelowOriginalPos && !container.classList.contains('sticky')) {
+      this.createStickyPlaceholder();
       container.classList.add('sticky');
       this.adjustStickyPosition();
     } else if (!isBelowOriginalPos && container.classList.contains('sticky')) {
       container.classList.remove('sticky');
+      this.removeStickyPlaceholder();
+    }
+  }
+
+  createStickyPlaceholder() {
+    const container = this.elements.unColoredContainer;
+    const lowerFrame = this.elements.lowerFrame;
+    
+    if (!container || !lowerFrame || this.elements.stickyPlaceholder) return;
+
+    const containerHeight = container.offsetHeight;
+    
+    const placeholder = document.createElement("div");
+    placeholder.style.height = containerHeight + "px";
+    placeholder.style.width = "100%";
+    placeholder.style.visibility = "hidden";
+    placeholder.classList.add("sticky-placeholder");
+    
+    container.parentNode.insertBefore(placeholder, container);
+    
+    this.elements.stickyPlaceholder = placeholder;
+  }
+
+  removeStickyPlaceholder() {
+    if (this.elements.stickyPlaceholder && this.elements.stickyPlaceholder.parentNode) {
+      this.elements.stickyPlaceholder.parentNode.removeChild(this.elements.stickyPlaceholder);
+      this.elements.stickyPlaceholder = null;
     }
   }
 
@@ -679,7 +712,7 @@ class HeroApp {
     }
 
     if (this.hero && typeof this.hero.stopAnimation === 'function') {
-      this.hero.stopAnimation();
+      this.hero.cleanup();
     }
 
     this.hero = null;
