@@ -35,6 +35,8 @@ class Hero {
     this.stickyHeaderOriginalY = null;
     this.snapToUncoloredDone = false;
     this.snapToTopDone = false;
+    this.isSnapping = false;
+    this.lastSnapTime = null;
 
     this.init();
   }
@@ -533,30 +535,61 @@ class Hero {
       this.stickyHeaderOriginalY = rect.top + window.scrollY;
     }
 
+    const now = Date.now();
+    if (this.lastSnapTime && (now - this.lastSnapTime) < 100) {
+      this.lastScrollY = scrollY;
+      return;
+    }
+
+    if (scrollY <= 10) {
+      this.snapToTopDone = false;
+      this.snapToUncoloredDone = false;
+    } else if (Math.abs(scrollY - this.stickyHeaderOriginalY) <= 10) {
+      this.snapToUncoloredDone = false;
+    }
+
     if (
       scrollDirection === 'down' &&
       !this.snapToUncoloredDone &&
-      scrollY >= Hero.SCROLL_THRESHOLD
+      scrollY >= Hero.SCROLL_THRESHOLD &&
+      scrollY < this.stickyHeaderOriginalY - 20 &&
+      !this.isSnapping
     ) {
       this.snapToUncoloredDone = true;
       this.snapToTopDone = false;
+      this.isSnapping = true;
+      this.lastSnapTime = now;
+      
       window.scrollTo({
         top: this.stickyHeaderOriginalY,
         behavior: 'smooth',
       });
+
+      setTimeout(() => {
+        this.isSnapping = false;
+      }, 600);
     }
 
-    if (
+    else if (
       scrollDirection === 'up' &&
       !this.snapToTopDone &&
-      scrollY < this.stickyHeaderOriginalY
+      scrollY < this.stickyHeaderOriginalY - 20 &&
+      scrollY > 20 &&
+      !this.isSnapping
     ) {
       this.snapToTopDone = true;
       this.snapToUncoloredDone = false;
+      this.isSnapping = true;
+      this.lastSnapTime = now;
+
       window.scrollTo({
         top: 0,
         behavior: 'smooth',
       });
+
+      setTimeout(() => {
+        this.isSnapping = false;
+      }, 600);
     }
 
     this.lastScrollY = scrollY;
