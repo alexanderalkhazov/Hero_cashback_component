@@ -30,20 +30,23 @@ class Hero {
     this.isUpperLogoHidden = false;
     this.isUpperLogoTickingAnimation = false;
 
-        // new scroll state
+    // new scroll state
     this.lastScrollY = 0;
     this.stickyHeaderOriginalY = null;
     this.snapToUncoloredDone = false;
     this.snapToTopDone = false;
     this.isSnapping = false;
     this.lastSnapTime = null;
+    this.needsRecalculation = true;
 
     this.init();
   }
 
   setFrameColorBackground() {
     if (this.elements.coloredContainer) {
-      const url = this.elements.coloredContainer.getAttribute("data-background-url");
+      const url = this.elements.coloredContainer.getAttribute(
+        "data-background-url"
+      );
       if (url) {
         this.elements.coloredContainer.style.backgroundImage = `url('${url}')`;
       }
@@ -54,14 +57,25 @@ class Hero {
     if (!this.elements.heroContainer) return null;
 
     return {
-      isPublishCTC: this.elements.heroContainer.getAttribute("data-ispublishctc") === "true",
-      ctcBtnColor: this.elements.heroContainer.getAttribute("data-ctcbtn-color"),
-      ctcImageAltText: this.elements.heroContainer.getAttribute("data-altimagectctext"),
-      shouldShowButton: this.elements.heroContainer.getAttribute("data-show-ctc-button") === "true",
-      isAmexWebsite: this.elements.heroContainer.getAttribute("data-isamexwebsite") === "true",
-      iconUrl: this.elements.heroContainer.getAttribute("data-click-to-call-icon") || "",
+      isPublishCTC:
+        this.elements.heroContainer.getAttribute("data-ispublishctc") ===
+        "true",
+      ctcBtnColor:
+        this.elements.heroContainer.getAttribute("data-ctcbtn-color"),
+      ctcImageAltText: this.elements.heroContainer.getAttribute(
+        "data-altimagectctext"
+      ),
+      shouldShowButton:
+        this.elements.heroContainer.getAttribute("data-show-ctc-button") ===
+        "true",
+      isAmexWebsite:
+        this.elements.heroContainer.getAttribute("data-isamexwebsite") ===
+        "true",
+      iconUrl:
+        this.elements.heroContainer.getAttribute("data-click-to-call-icon") ||
+        "",
       phoneNumber: this.elements.heroContainer.getAttribute("data-phone") || "",
-      urlLink: this.elements.heroContainer.getAttribute("data-url") || ""
+      urlLink: this.elements.heroContainer.getAttribute("data-url") || "",
     };
   }
 
@@ -69,7 +83,9 @@ class Hero {
     const button = document.createElement("button");
 
     button.classList.add(
-      attributes.isAmexWebsite ? "amex__btn__theme__sticky__header" : "isracard__btn__theme__sticky__header",
+      attributes.isAmexWebsite
+        ? "amex__btn__theme__sticky__header"
+        : "isracard__btn__theme__sticky__header",
       "clickToCall__btn",
       "lower__frame__btns"
     );
@@ -78,7 +94,8 @@ class Hero {
       button.style.backgroundColor = attributes.ctcBtnColor;
     }
 
-    if (attributes.phoneNumber) button.setAttribute("data-phone", attributes.phoneNumber);
+    if (attributes.phoneNumber)
+      button.setAttribute("data-phone", attributes.phoneNumber);
     if (attributes.urlLink) button.setAttribute("data-url", attributes.urlLink);
 
     button.addEventListener("click", function () {
@@ -102,11 +119,19 @@ class Hero {
       const attributes = this.getHeroContainerAttributes();
       if (!attributes) return;
 
-      if (attributes.shouldShowButton && !this.elements.ctcBtn && attributes.isPublishCTC) {
+      if (
+        attributes.shouldShowButton &&
+        !this.elements.ctcBtn &&
+        attributes.isPublishCTC
+      ) {
         this.elements.ctcBtn = this.createCTCButton(attributes);
         this.elements.lowerFrame.appendChild(this.elements.ctcBtn);
         this.elements.lowerFrame.classList.add("has-ctc-btn");
-      } else if (!attributes.shouldShowButton && this.elements.ctcBtn && !attributes.isPublishCTC) {
+      } else if (
+        !attributes.shouldShowButton &&
+        this.elements.ctcBtn &&
+        !attributes.isPublishCTC
+      ) {
         this.elements.lowerFrame.removeChild(this.elements.ctcBtn);
         this.elements.lowerFrame.classList.remove("has-ctc-btn");
         this.elements.ctcBtn = null;
@@ -114,10 +139,14 @@ class Hero {
 
       this.elements.lowerFrame.classList.toggle(
         "has-ctc-btn",
-        this.elements.ctcBtn && this.elements.lowerFrame.contains(this.elements.ctcBtn)
+        this.elements.ctcBtn &&
+          this.elements.lowerFrame.contains(this.elements.ctcBtn)
       );
     } else {
-      if (this.elements.ctcBtn && this.elements.lowerFrame.contains(this.elements.ctcBtn)) {
+      if (
+        this.elements.ctcBtn &&
+        this.elements.lowerFrame.contains(this.elements.ctcBtn)
+      ) {
         this.elements.lowerFrame.removeChild(this.elements.ctcBtn);
         this.elements.ctcBtn = null;
       }
@@ -134,18 +163,28 @@ class Hero {
   }
 
   cacheElements() {
-    this.elements.coloredContainer = document.querySelector(".colored__frame__container");
-    this.elements.unColoredContainer = document.querySelector(".uncolored__frame__container");
-    this.elements.lowerFrame = document.querySelector(".lower__part__glass__frame");
+    this.elements.coloredContainer = document.querySelector(
+      ".colored__frame__container"
+    );
+    this.elements.unColoredContainer = document.querySelector(
+      ".uncolored__frame__container"
+    );
+    this.elements.lowerFrame = document.querySelector(
+      ".lower__part__glass__frame"
+    );
     this.elements.mainBtn = document.querySelector(".main__order__card__btn");
     this.elements.ctcBtn = document.querySelector(".clickToCall__btn");
     this.elements.sideText = document.querySelector(".side__text__cashback");
     this.elements.heroContainer = document.querySelector(".hero__container");
-    this.elements.companyLogoContainer = document.querySelector(".company__logo__container");
+    this.elements.companyLogoContainer = document.querySelector(
+      ".company__logo__container"
+    );
+  
+    this.elements.stickyPlaceholder = document.querySelector(".sticky-placeholder");
   }
 
   setBorderRadius(element, radius) {
-    if (typeof radius === 'number') {
+    if (typeof radius === "number") {
       element.style.borderRadius = `${radius}px`;
     } else {
       const { top = 0, bottom = 0 } = radius;
@@ -163,7 +202,8 @@ class Hero {
 
     if (this.elements.lowerFrame) {
       this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: 12 });
-      this.elements.lowerFrame.style.width = this.deviceType === "desktop" ? "337px" : "228px";
+      this.elements.lowerFrame.style.width =
+        this.deviceType === "desktop" ? "337px" : "228px";
     }
 
     if (this.elements.ctcBtn) {
@@ -177,7 +217,8 @@ class Hero {
     }
 
     if (this.elements.companyLogoContainer) {
-      this.elements.companyLogoContainer.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      this.elements.companyLogoContainer.style.transition =
+        "opacity 0.3s ease, transform 0.3s ease";
       this.elements.companyLogoContainer.style.opacity = "1";
       this.elements.companyLogoContainer.style.transform = "translateY(0)";
     }
@@ -191,14 +232,14 @@ class Hero {
       this.updateCtcStatus();
       this.startAnimation();
     } catch (error) {
-      console.error('Hero initialization failed:', error);
+      console.error("Hero initialization failed:", error);
       this.handleInitError(error);
     }
   }
 
   handleInitError(error) {
     this.stopAnimation();
-    console.warn('Hero running in degraded mode due to initialization error');
+    console.warn("Hero running in degraded mode due to initialization error");
   }
 
   updateCtcStatus() {
@@ -228,7 +269,10 @@ class Hero {
     const endWidth = window.innerWidth;
     const width = this.lerp(startWidth, endWidth, progress);
 
-    this.elements.coloredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
+    this.elements.coloredContainer.style.width = `${Math.min(
+      width,
+      window.innerWidth
+    )}px`;
     this.elements.coloredContainer.style.maxWidth = "100%";
 
     const radius = this.lerp(20, 0, progress);
@@ -241,12 +285,21 @@ class Hero {
     const uncoloredWidth = this.lerp(722, window.innerWidth, progress);
     const lowerWidth = this.lerp(337, window.innerWidth, progress);
 
-    this.elements.unColoredContainer.style.width = `${Math.min(uncoloredWidth, window.innerWidth)}px`;
-    this.elements.lowerFrame.style.width = `${Math.min(lowerWidth, window.innerWidth)}px`;
+    this.elements.unColoredContainer.style.width = `${Math.min(
+      uncoloredWidth,
+      window.innerWidth
+    )}px`;
+    this.elements.lowerFrame.style.width = `${Math.min(
+      lowerWidth,
+      window.innerWidth
+    )}px`;
     this.elements.lowerFrame.style.maxWidth = "none";
 
     const bottomRadius = this.lerp(12, 0, progress);
-    this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: bottomRadius });
+    this.setBorderRadius(this.elements.lowerFrame, {
+      top: 0,
+      bottom: bottomRadius,
+    });
   }
 
   animateDesktopMainBtn(progress) {
@@ -321,7 +374,10 @@ class Hero {
     if (!this.elements.coloredContainer) return;
 
     const width = this.lerp(354, window.innerWidth, progress);
-    this.elements.coloredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
+    this.elements.coloredContainer.style.width = `${Math.min(
+      width,
+      window.innerWidth
+    )}px`;
 
     const radius = this.lerp(20, 0, progress);
     this.setBorderRadius(this.elements.coloredContainer, radius);
@@ -331,18 +387,27 @@ class Hero {
     if (!this.elements.unColoredContainer) return;
 
     const width = this.lerp(228, window.innerWidth, progress);
-    this.elements.unColoredContainer.style.width = `${Math.min(width, window.innerWidth)}px`;
+    this.elements.unColoredContainer.style.width = `${Math.min(
+      width,
+      window.innerWidth
+    )}px`;
   }
 
   animateMobileGrowLowerFrame(progress) {
     if (!this.elements.lowerFrame) return;
 
     const width = this.lerp(228, window.innerWidth, progress);
-    this.elements.lowerFrame.style.width = `${Math.min(width, window.innerWidth)}px`;
+    this.elements.lowerFrame.style.width = `${Math.min(
+      width,
+      window.innerWidth
+    )}px`;
     this.elements.lowerFrame.style.maxWidth = "none";
 
     const bottomRadius = this.lerp(12, 0, progress);
-    this.setBorderRadius(this.elements.lowerFrame, { top: 0, bottom: bottomRadius });
+    this.setBorderRadius(this.elements.lowerFrame, {
+      top: 0,
+      bottom: bottomRadius,
+    });
   }
 
   animateMobileMainBtn(progress) {
@@ -448,11 +513,6 @@ class Hero {
     }
   }
 
-  cleanup() {
-    this.removeStickyPlaceholder();
-    this.stopAnimation();
-  }
-
   updateDeviceType() {
     const newDeviceType = this.getDeviceType();
     if (newDeviceType !== this.deviceType) {
@@ -500,67 +560,106 @@ class Hero {
   }
 
   adjustStickyPosition() {
-    if (!this.isMobile || !this.isChromeiOS() || !this.elements.unColoredContainer.classList.contains("sticky")) return;
+    if (
+      !this.isMobile ||
+      !this.isChromeiOS() ||
+      !this.elements.unColoredContainer.classList.contains("sticky")
+    )
+      return;
 
-    const visualViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const visualViewportHeight = window.visualViewport
+      ? window.visualViewport.height
+      : window.innerHeight;
     const layoutViewportHeight = window.innerHeight;
     const topOffset = Math.max(0, layoutViewportHeight - visualViewportHeight);
 
     this.elements.unColoredContainer.style.top = `${topOffset}px`;
   }
 
+  applyStickyHeaderPlaceHolder(container) {
+    const existingPlaceholder = document.querySelector(".sticky-placeholder");
+    
+    if (existingPlaceholder) {
+      this.elements.stickyPlaceholder = existingPlaceholder;
+      return;
+    }
+    
+    if (!this.elements.stickyPlaceholder || !this.elements.stickyPlaceholder.parentNode) {
+      const containerHeight = container.offsetHeight;
+      const placeholder = document.createElement("div");
+      placeholder.style.height = containerHeight + "px";
+      placeholder.classList.add("sticky-placeholder");
+      container.parentNode.insertBefore(placeholder, container);
+      this.elements.stickyPlaceholder = placeholder;
+    }
+  }
+
+  removeStickyPlaceholder() {
+    if (
+      this.elements.stickyPlaceholder &&
+      this.elements.stickyPlaceholder.parentNode
+    ) {
+      this.elements.stickyPlaceholder.parentNode.removeChild(
+        this.elements.stickyPlaceholder
+      );
+      this.elements.stickyPlaceholder = null;
+    }
+  }
+
   manageStickyHeader() {
     const container = this.elements.unColoredContainer;
     if (!container) return;
 
+    const savedOriginalY = sessionStorage.getItem("stickyHeaderOriginalY");
+    const savedNeedsRecalc = sessionStorage.getItem("needsRecalculation");
+
+    if (savedOriginalY !== null && this.stickyHeaderOriginalY === null) {
+      this.stickyHeaderOriginalY = parseFloat(savedOriginalY);
+    }
+    if (savedNeedsRecalc !== null) {
+      this.needsRecalculation = savedNeedsRecalc === "true";
+    }
+
     if (this.stickyHeaderOriginalY === null || this.needsRecalculation) {
+      const wasSticky = container.classList.contains("sticky");
+      if (wasSticky) {
+        container.classList.remove("sticky");
+        this.removeStickyPlaceholder();
+      }
+
       const rect = container.getBoundingClientRect();
       this.stickyHeaderOriginalY = rect.top + window.scrollY;
       this.needsRecalculation = false;
+
+      if (wasSticky) {
+        this.applyStickyHeaderPlaceHolder(container);
+        container.classList.add("sticky");
+      }
+
+      sessionStorage.setItem(
+        "stickyHeaderOriginalY",
+        this.stickyHeaderOriginalY
+      );
+      sessionStorage.setItem("needsRecalculation", this.needsRecalculation);
     }
 
     const scrollY = window.scrollY;
     const isBelowOriginalPos = scrollY >= this.stickyHeaderOriginalY;
+    const isCurrentlySticky = container.classList.contains("sticky");
 
-    if (isBelowOriginalPos && !container.classList.contains('sticky')) {
-      this.createStickyPlaceholder();
-      container.classList.add('sticky');
+    if (isBelowOriginalPos && !isCurrentlySticky) {
+      this.applyStickyHeaderPlaceHolder(container);
+      container.classList.add("sticky");
       this.adjustStickyPosition();
-    } else if (!isBelowOriginalPos && container.classList.contains('sticky')) {
-      container.classList.remove('sticky');
+    } else if (!isBelowOriginalPos && isCurrentlySticky) {
+      container.classList.remove("sticky");
       this.removeStickyPlaceholder();
-    }
-  }
-
-  createStickyPlaceholder() {
-    const container = this.elements.unColoredContainer;
-    const lowerFrame = this.elements.lowerFrame;
-    
-    if (!container || !lowerFrame || this.elements.stickyPlaceholder) return;
-
-    const containerHeight = container.offsetHeight;
-    
-    const placeholder = document.createElement("div");
-    placeholder.style.height = containerHeight + "px";
-    placeholder.style.width = "100%";
-    placeholder.style.visibility = "hidden";
-    placeholder.classList.add("sticky-placeholder");
-    
-    container.parentNode.insertBefore(placeholder, container);
-    
-    this.elements.stickyPlaceholder = placeholder;
-  }
-
-  removeStickyPlaceholder() {
-    if (this.elements.stickyPlaceholder && this.elements.stickyPlaceholder.parentNode) {
-      this.elements.stickyPlaceholder.parentNode.removeChild(this.elements.stickyPlaceholder);
-      this.elements.stickyPlaceholder = null;
     }
   }
 
   handleSnapScroll() {
     const scrollY = window.scrollY;
-    const scrollDirection = this.lastScrollY < scrollY ? 'down' : 'up';
+    const scrollDirection = this.lastScrollY < scrollY ? "down" : "up";
 
     if (!this.elements.unColoredContainer) return;
     if (this.stickyHeaderOriginalY === null) {
@@ -569,7 +668,7 @@ class Hero {
     }
 
     const now = Date.now();
-    if (this.lastSnapTime && (now - this.lastSnapTime) < 100) {
+    if (this.lastSnapTime && now - this.lastSnapTime < 100) {
       this.lastScrollY = scrollY;
       return;
     }
@@ -582,7 +681,7 @@ class Hero {
     }
 
     if (
-      scrollDirection === 'down' &&
+      scrollDirection === "down" &&
       !this.snapToUncoloredDone &&
       scrollY >= Hero.SCROLL_THRESHOLD &&
       scrollY < this.stickyHeaderOriginalY - 20 &&
@@ -592,21 +691,19 @@ class Hero {
       this.snapToTopDone = false;
       this.isSnapping = true;
       this.lastSnapTime = now;
-      
+
       window.scrollTo({
         top: this.stickyHeaderOriginalY,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
 
       setTimeout(() => {
         this.isSnapping = false;
       }, 600);
-    }
-
-    else if (
-      scrollDirection === 'up' &&
+    } else if (
+      scrollDirection === "up" &&
       !this.snapToTopDone &&
-      scrollY < this.stickyHeaderOriginalY - 20 &&
+      scrollY < this.stickyHeaderOriginalY &&
       scrollY > 20 &&
       !this.isSnapping
     ) {
@@ -617,7 +714,7 @@ class Hero {
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
 
       setTimeout(() => {
@@ -638,7 +735,7 @@ class HeroApp {
     this.boundHandlers = {
       resize: this.handleResize.bind(this),
       scroll: this.handleScroll.bind(this),
-      beforeUnload: this.cleanup.bind(this)
+      beforeUnload: this.cleanup.bind(this),
     };
   }
 
@@ -648,23 +745,38 @@ class HeroApp {
       this.hero.manageClickToCallButton();
       this.setupEventListeners();
     } catch (error) {
-      console.error('Failed to initialize Hero:', error);
+      console.error("Failed to initialize Hero:", error);
     }
   }
 
   setupEventListeners() {
-    window.addEventListener('resize', this.boundHandlers.resize, { passive: true });
-    window.addEventListener('scroll', this.boundHandlers.scroll, { passive: true });
-    window.addEventListener('beforeunload', this.boundHandlers.beforeUnload);
+    window.addEventListener("resize", this.boundHandlers.resize, {
+      passive: true,
+    });
+    window.addEventListener("scroll", this.boundHandlers.scroll, {
+      passive: true,
+    });
+    window.addEventListener("beforeunload", this.boundHandlers.beforeUnload);
 
-    if (window.visualViewport && this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
+    if (
+      window.visualViewport &&
+      this.hero &&
+      this.hero.isMobile &&
+      this.hero.isChromeiOS()
+    ) {
       this.boundHandlers.viewportChange = () => {
         if (this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
           this.hero.adjustStickyPosition();
         }
       };
-      window.visualViewport.addEventListener('resize', this.boundHandlers.viewportChange);
-      window.visualViewport.addEventListener('scroll', this.boundHandlers.viewportChange);
+      window.visualViewport.addEventListener(
+        "resize",
+        this.boundHandlers.viewportChange
+      );
+      window.visualViewport.addEventListener(
+        "scroll",
+        this.boundHandlers.viewportChange
+      );
     }
   }
 
@@ -702,17 +814,28 @@ class HeroApp {
       this.resizeTimeout = null;
     }
 
-    window.removeEventListener('resize', this.boundHandlers.resize);
-    window.removeEventListener('scroll', this.boundHandlers.scroll);
-    window.removeEventListener('beforeunload', this.boundHandlers.beforeUnload);
+    window.removeEventListener("resize", this.boundHandlers.resize);
+    window.removeEventListener("scroll", this.boundHandlers.scroll);
+    window.removeEventListener("beforeunload", this.boundHandlers.beforeUnload);
 
-    if (window.visualViewport && this.boundHandlers.viewportChange && this.hero && this.hero.isChromeiOS()) {
-      window.visualViewport.removeEventListener('resize', this.boundHandlers.viewportChange);
-      window.visualViewport.removeEventListener('scroll', this.boundHandlers.viewportChange);
+    if (
+      window.visualViewport &&
+      this.boundHandlers.viewportChange &&
+      this.hero &&
+      this.hero.isChromeiOS()
+    ) {
+      window.visualViewport.removeEventListener(
+        "resize",
+        this.boundHandlers.viewportChange
+      );
+      window.visualViewport.removeEventListener(
+        "scroll",
+        this.boundHandlers.viewportChange
+      );
     }
 
-    if (this.hero && typeof this.hero.stopAnimation === 'function') {
-      this.hero.cleanup();
+    if (this.hero && typeof this.hero.stopAnimation === "function") {
+      this.hero.stopAnimation();
     }
 
     this.hero = null;
@@ -726,15 +849,29 @@ class HeroApp {
 let heroApp;
 let hero;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   heroApp = new HeroApp();
   heroApp.init();
   heroApp.onPageLoadCheckStickyHeaderOrder();
   hero = heroApp.getHeroInstance();
 });
 
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   if (heroApp) {
     heroApp.cleanup();
+  }
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (heroApp && !heroApp.hero) {
+    heroApp.init();
+    heroApp.hero.manageClickToCallButton();
+    heroApp.setupEventListeners();
+    heroApp.onPageLoadCheckStickyHeaderOrder();
+    hero = heroApp.hero;
+    heroApp.isDestroyed = false;
+  } else if (event.persisted && heroApp && heroApp.hero) {
+    console.log("Page restored from cache - checking sticky state");
+    heroApp.hero.manageStickyHeader();
   }
 });
