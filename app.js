@@ -757,27 +757,6 @@ class HeroApp {
       passive: true,
     });
     window.addEventListener("beforeunload", this.boundHandlers.beforeUnload);
-
-    if (
-      window.visualViewport &&
-      this.hero &&
-      this.hero.isMobile &&
-      this.hero.isChromeiOS()
-    ) {
-      this.boundHandlers.viewportChange = () => {
-        if (this.hero && this.hero.isMobile && this.hero.isChromeiOS()) {
-          this.hero.adjustStickyPosition();
-        }
-      };
-      window.visualViewport.addEventListener(
-        "resize",
-        this.boundHandlers.viewportChange
-      );
-      window.visualViewport.addEventListener(
-        "scroll",
-        this.boundHandlers.viewportChange
-      );
-    }
   }
 
   handleResize() {
@@ -817,23 +796,7 @@ class HeroApp {
     window.removeEventListener("resize", this.boundHandlers.resize);
     window.removeEventListener("scroll", this.boundHandlers.scroll);
     window.removeEventListener("beforeunload", this.boundHandlers.beforeUnload);
-
-    if (
-      window.visualViewport &&
-      this.boundHandlers.viewportChange &&
-      this.hero &&
-      this.hero.isChromeiOS()
-    ) {
-      window.visualViewport.removeEventListener(
-        "resize",
-        this.boundHandlers.viewportChange
-      );
-      window.visualViewport.removeEventListener(
-        "scroll",
-        this.boundHandlers.viewportChange
-      );
-    }
-
+    
     if (this.hero && typeof this.hero.stopAnimation === "function") {
       this.hero.stopAnimation();
     }
