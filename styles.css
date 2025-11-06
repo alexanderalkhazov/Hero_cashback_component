@@ -1,8 +1,3 @@
-body {
-  padding-bottom: 2000px;
-  margin: 0;
-}
-
 .company__logo__container {
   min-height: 100px;
   display: flex;

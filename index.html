@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/sections.css">
     </link>
 </head>
 
@@ -36,22 +37,146 @@
             </div>
         </div>
     </div>
+
     <section style="text-align: center;">
         <h1>Other stuff</h1>
         <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Soluta quidem vero, consequatur asperiores
             molestias nesciunt maxime natus similique dolorem! Quam facere magnam officia perferendis alias nihil eius!
             Illo, eius doloremque.</p>
-
         <button onclick="window.location.href='https://google.com'">
             clicks
         </button>
     </section>
 
-    <section>
-        <form action="#">
-            <label for="x">x</label>
-            <input type="text" name="alex" placeholder="תז">
-        </form>
+    <!-- Section with faq exapnadleable -->
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What is this service about?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>This service provides comprehensive solutions for your business needs, including advanced
+                            analytics, customer support, and innovative technology implementations.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How do I get started?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Getting started is easy! Simply click the "Order Now" button above and follow our simple
+                            onboarding process. Our team will guide you through every step.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What are the pricing options?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We offer flexible pricing plans starting from $29/month. Each plan includes different
+                            features and usage limits. Contact us for a custom quote.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is there customer support?</span>
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! We provide 24/7 customer support through multiple channels including phone, email, and
+                            live chat. Our support team is always ready to help.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section with lead form -->
+    <section class="lead-form-section">
+        <div class="container">
+            <div class="lead-form-container">
+                <div class="form-content">
+                    <h2>Get Your Free Consultation</h2>
+                    <p>Fill out the form below and our experts will contact you within 24 hours to discuss your specific
+                        needs.</p>
+                    <form class="lead-form" action="#" method="POST">
+                        <div class="form-group">
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="company">Company Name</label>
+                            <input type="text" id="company" name="company">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Tell us about your needs</label>
+                            <textarea id="message" name="message" rows="4"
+                                placeholder="Describe your project or requirements..."></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">Get Free Consultation</button>
+                    </form>
+                </div>
+                <div class="form-image">
+                    <img src="/assetsnew/model_isracard.png" alt="Consultation" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section with some huge text -->
+    <section class="huge-text-section">
+        <div class="container">
+            <div class="huge-text-content">
+                <h1 class="huge-title">Transform Your Business</h1>
+                <p class="huge-subtitle">With Our Innovative Solutions</p>
+                <div class="huge-text-body">
+                    <p>In today's rapidly evolving digital landscape, staying ahead of the competition requires more
+                        than just good ideas—it demands cutting-edge technology, strategic thinking, and unwavering
+                        commitment to excellence.</p>
+                    <p>Our comprehensive suite of services is designed to empower businesses of all sizes to achieve
+                        their full potential. From advanced analytics and AI-driven insights to seamless integration and
+                        scalable infrastructure, we provide everything you need to thrive in the modern marketplace.</p>
+                    <p>Whether you're a startup looking to disrupt your industry or an established enterprise seeking to
+                        optimize operations, our team of experts is here to guide you every step of the way. We don't
+                        just provide solutions—we build partnerships that drive real, measurable results.</p>
+                    <p>Join thousands of satisfied clients who have transformed their businesses with our innovative
+                        approach. The future of your success starts here, and we're excited to be part of your journey.
+                    </p>
+                </div>
+                <div class="huge-text-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">10,000+</div>
+                        <div class="stat-label">Happy Clients</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">Projects Completed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label">Uptime Guarantee</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Support Available</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
     <script src="/app.js"></script>
 </body>
