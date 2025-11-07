@@ -756,14 +756,15 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 window.addEventListener("scroll", () => {
+
   if (hero) {
+    hero.manageClickToCallButton();
     hero.handleScrollUpperLogo();
-    hero.manageStickyHeader();
 
     if (!hero.isSnapping) {
       hero.handleSnapScroll();
     }
 
-    hero.manageClickToCallButton();
+    hero.manageStickyHeader();
   }
 })
