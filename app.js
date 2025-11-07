@@ -554,28 +554,6 @@ class Hero {
     return setTimeout(callback, Hero.ANIMATION_TIMEOUT);
   }
 
-  isChromeiOS() {
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    return /iPad|iPhone|iPod/.test(userAgent) && /CriOS/.test(userAgent);
-  }
-
-  adjustStickyPosition() {
-    if (
-      !this.isMobile ||
-      !this.isChromeiOS() ||
-      !this.elements.unColoredContainer.classList.contains("sticky")
-    )
-      return;
-
-    const visualViewportHeight = window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight;
-    const layoutViewportHeight = window.innerHeight;
-    const topOffset = Math.max(0, layoutViewportHeight - visualViewportHeight);
-
-    this.elements.unColoredContainer.style.top = `${topOffset}px`;
-  }
-
   applyStickyHeaderPlaceHolder(container) {
     const existingPlaceholder = document.querySelector(".sticky-placeholder");
 
@@ -610,16 +588,6 @@ class Hero {
     const container = this.elements.unColoredContainer;
     if (!container) return;
 
-    const savedOriginalY = sessionStorage.getItem("stickyHeaderOriginalY");
-    const savedNeedsRecalc = sessionStorage.getItem("needsRecalculation");
-
-    if (savedOriginalY !== null && this.stickyHeaderOriginalY === null) {
-      this.stickyHeaderOriginalY = parseFloat(savedOriginalY);
-    }
-    if (savedNeedsRecalc !== null) {
-      this.needsRecalculation = savedNeedsRecalc === "true";
-    }
-
     if (this.stickyHeaderOriginalY === null || this.needsRecalculation) {
       const wasSticky = container.classList.contains("sticky");
       if (wasSticky) {
@@ -635,12 +603,6 @@ class Hero {
         this.applyStickyHeaderPlaceHolder(container);
         container.classList.add("sticky");
       }
-
-      sessionStorage.setItem(
-        "stickyHeaderOriginalY",
-        this.stickyHeaderOriginalY
-      );
-      sessionStorage.setItem("needsRecalculation", this.needsRecalculation);
     }
 
     const scrollY = window.scrollY;
@@ -650,7 +612,6 @@ class Hero {
     if (isBelowOriginalPos && !isCurrentlySticky) {
       this.applyStickyHeaderPlaceHolder(container);
       container.classList.add("sticky");
-      this.adjustStickyPosition();
     } else if (!isBelowOriginalPos && isCurrentlySticky) {
       container.classList.remove("sticky");
       this.removeStickyPlaceholder();
@@ -771,5 +732,20 @@ window.addEventListener("scroll", () => {
 window.addEventListener("pageshow", () => {
   if (hero) {
     hero.manageStickyHeader();
+    hero.manageClickToCallButton();
   }
 })
+
+window.addEventListener("resize", () => {
+  if (hero) {
+    hero.manageStickyHeader();
+  }
+})
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (hero) {
+      hero.manageStickyHeader();
+    }
+  });
+}
