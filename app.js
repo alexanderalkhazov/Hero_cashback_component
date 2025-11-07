@@ -140,7 +140,7 @@ class Hero {
       this.elements.lowerFrame.classList.toggle(
         "has-ctc-btn",
         this.elements.ctcBtn &&
-          this.elements.lowerFrame.contains(this.elements.ctcBtn)
+        this.elements.lowerFrame.contains(this.elements.ctcBtn)
       );
     } else {
       if (
@@ -179,7 +179,7 @@ class Hero {
     this.elements.companyLogoContainer = document.querySelector(
       ".company__logo__container"
     );
-  
+
     this.elements.stickyPlaceholder = document.querySelector(".sticky-placeholder");
   }
 
@@ -578,12 +578,12 @@ class Hero {
 
   applyStickyHeaderPlaceHolder(container) {
     const existingPlaceholder = document.querySelector(".sticky-placeholder");
-    
+
     if (existingPlaceholder) {
       this.elements.stickyPlaceholder = existingPlaceholder;
       return;
     }
-    
+
     if (!this.elements.stickyPlaceholder || !this.elements.stickyPlaceholder.parentNode) {
       const containerHeight = container.offsetHeight;
       const placeholder = document.createElement("div");
@@ -657,6 +657,24 @@ class Hero {
     }
   }
 
+  disableInteractions() {
+    if (this.elements.heroContainer) {
+      this.elements.heroContainer.style.pointerEvents = "none";
+      this.elements.heroContainer.style.touchAction = "none";
+    }
+    document.body.style.pointerEvents = "none";
+    document.body.style.touchAction = "none";
+  }
+
+  enableInteractions() {
+    if (this.elements.heroContainer) {
+      this.elements.heroContainer.style.pointerEvents = "";
+      this.elements.heroContainer.style.touchAction = "";
+    }
+    document.body.style.pointerEvents = "";
+    document.body.style.touchAction = "";
+  }
+
   handleSnapScroll() {
     const scrollY = window.scrollY;
     const scrollDirection = this.lastScrollY < scrollY ? "down" : "up";
@@ -691,6 +709,7 @@ class Hero {
       this.snapToTopDone = false;
       this.isSnapping = true;
       this.lastSnapTime = now;
+      this.disableInteractions();
 
       window.scrollTo({
         top: this.stickyHeaderOriginalY,
@@ -699,7 +718,8 @@ class Hero {
 
       setTimeout(() => {
         this.isSnapping = false;
-      }, 600);
+        this.enableInteractions();
+      }, 900);
     } else if (
       scrollDirection === "up" &&
       !this.snapToTopDone &&
@@ -711,6 +731,7 @@ class Hero {
       this.snapToUncoloredDone = false;
       this.isSnapping = true;
       this.lastSnapTime = now;
+      this.disableInteractions();
 
       window.scrollTo({
         top: 0,
@@ -719,122 +740,30 @@ class Hero {
 
       setTimeout(() => {
         this.isSnapping = false;
-      }, 600);
+        this.enableInteractions();
+      }, 900);
     }
 
     this.lastScrollY = scrollY;
   }
 }
 
-class HeroApp {
-  constructor() {
-    this.hero = null;
-    this.resizeTimeout = null;
-    this.isDestroyed = false;
 
-    this.boundHandlers = {
-      resize: this.handleResize.bind(this),
-      scroll: this.handleScroll.bind(this),
-      beforeUnload: this.cleanup.bind(this),
-    };
-  }
-
-  init() {
-    try {
-      this.hero = new Hero();
-      this.hero.manageClickToCallButton();
-      this.setupEventListeners();
-    } catch (error) {
-      console.error("Failed to initialize Hero:", error);
-    }
-  }
-
-  setupEventListeners() {
-    window.addEventListener("resize", this.boundHandlers.resize, {
-      passive: true,
-    });
-    window.addEventListener("scroll", this.boundHandlers.scroll, {
-      passive: true,
-    });
-    window.addEventListener("beforeunload", this.boundHandlers.beforeUnload);
-  }
-
-  handleResize() {
-    if (this.isDestroyed || !this.hero) return;
-
-    clearTimeout(this.resizeTimeout);
-    this.resizeTimeout = setTimeout(() => {
-      if (this.hero && !this.isDestroyed) {
-        this.hero.manageClickToCallButton();
-        this.hero.updateDeviceType();
-      }
-    }, 150);
-  }
-
-  handleScroll() {
-    if (this.isDestroyed || !this.hero) return;
-
-    this.hero.handleUpperLogoAnimation();
-    this.hero.handleSnapScroll();
-    this.hero.manageStickyHeader();
-  }
-
-  onPageLoadCheckStickyHeaderOrder() {
-    if (this.hero) {
-      this.hero.manageStickyHeader();
-    }
-  }
-
-  cleanup() {
-    this.isDestroyed = true;
-
-    if (this.resizeTimeout) {
-      clearTimeout(this.resizeTimeout);
-      this.resizeTimeout = null;
-    }
-
-    window.removeEventListener("resize", this.boundHandlers.resize);
-    window.removeEventListener("scroll", this.boundHandlers.scroll);
-    window.removeEventListener("beforeunload", this.boundHandlers.beforeUnload);
-    
-    if (this.hero && typeof this.hero.stopAnimation === "function") {
-      this.hero.stopAnimation();
-    }
-
-    this.hero = null;
-  }
-
-  getHeroInstance() {
-    return this.hero;
-  }
-}
-
-let heroApp;
 let hero;
 
 document.addEventListener("DOMContentLoaded", () => {
-  heroApp = new HeroApp();
-  heroApp.init();
-  heroApp.onPageLoadCheckStickyHeaderOrder();
-  hero = heroApp.getHeroInstance();
-});
+  hero = new Hero();
+})
 
-window.addEventListener("beforeunload", () => {
-  if (heroApp) {
-    heroApp.cleanup();
-  }
-});
+window.addEventListener("scroll", () => {
+  if (hero) {
+    hero.handleScrollUpperLogo();
+    hero.manageStickyHeader();
 
-window.addEventListener("pageshow", (event) => {
-  if (heroApp && !heroApp.hero) {
-    heroApp.init();
-    heroApp.hero.manageClickToCallButton();
-    heroApp.setupEventListeners();
-    heroApp.onPageLoadCheckStickyHeaderOrder();
-    hero = heroApp.hero;
-    heroApp.isDestroyed = false;
-  } else if (event.persisted && heroApp && heroApp.hero) {
-    console.log("Page restored from cache - checking sticky state");
-    heroApp.hero.manageStickyHeader();
+    if (!hero.isSnapping) {
+      hero.handleSnapScroll();
+    }
+
+    hero.manageClickToCallButton();
   }
-});
+})
