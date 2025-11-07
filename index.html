@@ -29,7 +29,7 @@
                     class="lower__frame__btns main__order__card__btn isracard__btn__theme__sticky__header"
                     style="background-color: #007bff" onclick="window.location.href='https://google.com'">Order
                     Now</button>
-                <button class="lower__frame__btns clickToCall__btn isracard__btn__theme__sticky__header"
+                <button onclick="handleCtcClick(this)" class="lower__frame__btns clickToCall__btn isracard__btn__theme__sticky__header"
                     style="background-color: #007bff" data-phone="+972-50-123-4567">
                     <img src="/assetsnew/CTC_icon.png" alt="Click to call" />
                 </button>
@@ -179,6 +179,16 @@
         </div>
     </section>
     <script src="/app.js"></script>
+    <script>
+        function handleCtcClick(button) {
+            console.log("hey");
+
+            const phoneNumber = button.getAttribute('data-phone');
+            if (phoneNumber) {
+                window.location.href = `tel:${phoneNumber}`;
+            }
+        }
+    </script>
 </body>
 
 </html>
