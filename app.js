@@ -637,6 +637,8 @@ class Hero {
   }
 
   handleSnapScroll() {
+    if (this.isSnapping) return;
+    
     const scrollY = window.scrollY;
     const scrollDirection = this.lastScrollY < scrollY ? "down" : "up";
 
@@ -647,7 +649,7 @@ class Hero {
     }
 
     const now = Date.now();
-    if (this.lastSnapTime && now - this.lastSnapTime < 100) {
+    if (this.lastSnapTime && now - this.lastSnapTime < 1000) {
       this.lastScrollY = scrollY;
       return;
     }
@@ -655,7 +657,11 @@ class Hero {
     if (scrollY <= 10) {
       this.snapToTopDone = false;
       this.snapToUncoloredDone = false;
-    } else if (Math.abs(scrollY - this.stickyHeaderOriginalY) <= 10) {
+      this.lastScrollY = scrollY;
+      return;
+    }
+    
+    if (Math.abs(scrollY - this.stickyHeaderOriginalY) <= 10) {
       this.snapToUncoloredDone = false;
     }
 
