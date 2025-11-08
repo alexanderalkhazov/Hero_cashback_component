@@ -55,6 +55,22 @@
   position: fixed;
   top: 0;
   width: 100vw;
+  padding-top: env(safe-area-inset-top);
+  transition: top 0.1s ease-out;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform, top;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .sticky {
+    position: fixed;
+    top: 0;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
 }
 
 .upper__part__glass__container {
